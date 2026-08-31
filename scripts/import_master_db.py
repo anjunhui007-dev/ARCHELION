@@ -15,6 +15,9 @@ SHEETS = {
     "equipment": "03_장비_206",
     "recipes": "04_제작_40_레시피",
     "monsterRewards": "05_몬스터_EXP_Gold",
+    "sets": "06_세트효과",
+    "items": "07_아이템_설명",
+    "skills": "08_스킬_마스터",
 }
 
 
@@ -32,10 +35,10 @@ def rows(sheet):
 
 
 payload = {key: rows(sheet) for key, sheet in SHEETS.items()}
-payload["meta"] = {"source": source.name, "version": "v1"}
+payload["meta"] = {"source": source.name, "version": "v2"}
 destination.parent.mkdir(parents=True, exist_ok=True)
 destination.write_text(
-    "/* Generated from ARCHELION_MASTER_DB_v1.xlsx. Do not hand-edit. */\n"
+    f"/* Generated from {source.name}. Do not hand-edit. */\n"
     "window.ARCHELION_MASTER_DB = "
     + json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
     + ";\n",
