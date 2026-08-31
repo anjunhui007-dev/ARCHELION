@@ -176,3 +176,58 @@ bindModal=function(tab){
   anchor.insertAdjacentHTML('afterend','<button class="primary" id="openTestLabFromSettings">전투 · 드롭 · 상자 테스트 랩</button>');
   $('#openTestLabFromSettings').onclick=()=>openModal('testlab');
 };
+
+// Final test-lab controls. Only physical basic attacks exist; active skills come from equipped essences.
+function labSkill(raw){
+  const text=String(raw?.description||raw?.name||raw||'').replace(/^.*?의 정수\s*/,'');
+  const [namePart,effectPart='']=text.split(/\s*[—–-]\s*/,2);
+  const name=namePart.trim()||'이름 없는 스킬', effect=effectPart.trim();
+  const isBuff=/\d+턴/.test(effect);
+  const kind=/고정/.test(effect)?'fixed':/마법/.test(effect)?'magic':'physical';
+  const base=Number((effect.match(/(?:물리|마법|고정)\s*(\d+(?:\.\d+)?)/)||[,5])[1]);
+  const coefficients={};
+  const statMap={근력:'strength',민첩:'agility',활력:'vitality',지력:'intelligence',의지:'will',행운:'luck',마력:'mana',물방:'physicalDefense',마방:'magicDefense'};
+  for(const [label,key] of Object.entries(statMap)){
+    const hit=effect.match(new RegExp(`${label}\\s*[×x]\\s*(\\d+(?:\\.\\d+)?)`));
+    if(hit)coefficients[key]=Number(hit[1]);
+  }
+  const modifiers=dbModifiers(effect.replace(/^\d+턴\s*/,''));
+  return {name,effect,isBuff,kind,base,coefficients,stats:modifiers.stats,specialStats:modifiers.specialStats};
+}
+function labTotalsWithBuffs(){
+  const totals=statTotals(),buffs=state.testLab?.battle?.buffs||[];
+  for(const buff of buffs){
+    for(const [key,value] of Object.entries(buff.stats||{}))totals.final[key]=(totals.final[key]||0)+Number(value||0);
+    for(const [key,value] of Object.entries(buff.specialStats||{}))totals.specialFinal[key]=(totals.specialFinal[key]||0)+Number(value||0);
+  }
+  return totals;
+}
+function labSkillDamage(skill,totals,dummy,crit){
+  let raw=skill.base;
+  for(const [key,coefficient] of Object.entries(skill.coefficients||{}))raw+=(Number(totals.final[key])||0)*Number(coefficient||0);
+  if(crit)raw*=(Number(totals.specialFinal.critDamage)||150)/100;
+  if(skill.kind==='fixed')return raw;
+  const defense=Math.max(0,(skill.kind==='magic'?Number(dummy.magicDefense):Number(dummy.physicalDefense))-(Number(totals.specialFinal.penetration)||0));
+  return raw*100/(100+defense);
+}
+const contentBeforeSkillLab=content;
+content=function(tab){
+  if(tab!=='testlab')return contentBeforeSkillLab(tab);
+  const d=state.testLab?.dummy||{}, battle=state.testLab?.battle||{actions:3,damage:0}, skills=derivedSkills().active.map(labSkill);
+  const skillOptions=skills.length?skills.map((skill,index)=>`<option value="${index}">${esc(skill.name)} — ${esc(skill.effect||'효과 정보 없음')}</option>`).join(''):'<option value="">장착한 액티브 정수가 없습니다.</option>';
+  return `<section class="test-lab"><small>ARCHELION TEST LAB</small><h3>전투 · 드롭 · 상자 검증</h3><div class="test-lab-grid"><article class="setting-card"><strong>무한 허수아비</strong><small>턴은 없으며, 플레이어 행동 뒤 반격만 설정할 수 있습니다.</small><label>물리 방어<input id="labPdef" type="number" min="0" value="${Number(d.physicalDefense)||0}"></label><label>마법 방어<input id="labMdef" type="number" min="0" value="${Number(d.magicDefense)||0}"></label><label>회피율 %<input id="labEvasion" type="number" min="0" max="100" value="${Number(d.evasion)||0}"></label><label>반격 피해<input id="labCounterDamage" type="number" min="0" value="${Number(d.counterDamage)||0}"></label><label><input id="labCounter" type="checkbox" ${d.counter?'checked':''}> 행동 후 반격</label><div class="test-grants"><button id="labSaveDummy">허수아비 설정 저장</button><button id="labPhysical">물리 기본공격</button><button id="labNewTurn">3행동 회복</button><button id="labGrantAll">전 장비 · 정수 지급</button></div><label>액티브 스킬<select id="labSkill">${skillOptions}</select></label><button class="primary" id="labUseSkill" ${skills.length?'':'disabled'}>선택 스킬 사용</button><p id="labBattleResult">남은 행동 ${Number(battle.actions)??3} / 3 · 누적 피해 ${Number(battle.damage)||0}</p></article><article class="setting-card"><strong>몬스터 처치·드롭</strong><small>선택한 몬스터를 즉시 처치해 실제 EXP·골드·정수·부산물을 확인합니다.</small><select id="labMonster"><option>DB 불러오는 중…</option></select><button class="primary" id="labKillMonster">선택 몬스터 처치</button><p id="labDropResult">아직 처치 기록이 없습니다.</p></article><article class="setting-card"><strong>상자 개봉</strong><small>희귀 획득률에 따른 1단계 승급과 실제 장비·소비품·재료 보상을 확인합니다.</small><div class="test-grants chest-buttons">${['C1','C2','C3','C4','C5'].map(id=>`<button data-lab-chest="${id}">${id} ${window.ARCHELION.CHESTS[id].name}</button>`).join('')}</div><p id="labChestResult">개봉할 상자를 선택해 주세요.</p></article></div></section>`;
+};
+const bindBeforeSkillLab=bindModal;
+bindModal=function(tab){
+  if(tab!=='testlab')return bindBeforeSkillLab(tab);
+  const saveDummy=()=>{state.testLab??={};state.testLab.dummy={physicalDefense:Math.max(0,Number($('#labPdef').value)||0),magicDefense:Math.max(0,Number($('#labMdef').value)||0),evasion:Math.max(0,Math.min(100,Number($('#labEvasion').value)||0)),counterDamage:Math.max(0,Number($('#labCounterDamage').value)||0),counter:$('#labCounter').checked};state.testLab.battle??={actions:3,damage:0,buffs:[]};state.testLab.battle.buffs??=[];save(false)};
+  const result=(text)=>{$('#labBattleResult').textContent=text};
+  const consumeAction=()=>{const b=state.testLab.battle;if(b.actions<=0){result('행동이 없습니다. “3행동 회복”을 누르세요.');return false}b.actions--;return true};
+  const counter=()=>{const d=state.testLab.dummy;if(d.counter&&d.counterDamage>0){state.player.hp=Math.max(0,(Number(state.player.hp)||0)-d.counterDamage);return ` · 반격 ${d.counterDamage}`}return''};
+  const attack=(skill=null)=>{saveDummy();if(!consumeAction())return;const b=state.testLab.battle,d=state.testLab.dummy,t=labTotalsWithBuffs(),hit=Math.random()*100>=Math.max(0,d.evasion-(t.specialFinal.accuracy||0));let message='회피';if(hit){const crit=Math.random()*100<Math.min(100,Number(t.specialFinal.critRate)||5),damage=skill?labSkillDamage(skill,t,d,crit):window.ARCHELION.damage({kind:'physical',stats:t.final,physicalDefense:d.physicalDefense,penetration:t.specialFinal.penetration,crit,critDamage:t.specialFinal.critDamage});b.damage+=Math.round(damage*100)/100;message=`${skill?skill.name:'물리 기본공격'} ${Math.round(damage*100)/100}${crit?' · 치명타':''}`}const recoil=counter();save(false);result(`${message}${recoil} · 남은 행동 ${b.actions}/3 · 누적 피해 ${b.damage}`)};
+  $('#labSaveDummy').onclick=()=>{saveDummy();result('허수아비 설정을 저장했습니다.')};
+  $('#labPhysical').onclick=()=>attack();
+  $('#labGrantAll').onclick=()=>grantAllTestContent().then(()=>{result('전 장비·정수와 무한 소모품을 지급했습니다. 정수 화면에서 원하는 정수를 장착한 뒤 스킬을 사용하세요.');showTab('testlab')}).catch(error=>alert(error.message));
+  $('#labUseSkill').onclick=()=>{const skills=derivedSkills().active.map(labSkill),skill=skills[Number($('#labSkill').value)];if(!skill)return;if(skill.isBuff){saveDummy();if(!consumeAction())return;const buffs=state.testLab.battle.buffs,existing=buffs.find(buff=>buff.name===skill.name);const buff={name:skill.name,stats:skill.stats,specialStats:skill.specialStats,turns:3};if(existing)Object.assign(existing,buff);else buffs.push(buff);const recoil=counter();save(false);result(`${skill.name} 발동 · 3턴 버프 적용${recoil} · 남은 행동 ${state.testLab.battle.actions}/3`)}else attack(skill)};
+  $('#labNewTurn').onclick=()=>{saveDummy();const b=state.testLab.battle;b.buffs=(b.buffs||[]).map(buff=>({...buff,turns:Number(buff.turns)-1})).filter(buff=>buff.turns>0);b.actions=3;save(false);result(`새 플레이어 턴 · 3행동 회복${b.buffs.length?` · 유지 버프: ${b.buffs.map(x=>`${x.name} ${x.turns}턴`).join(', ')}`:' · 유지 버프 없음'}`)};
+};
