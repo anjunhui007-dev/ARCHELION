@@ -18,6 +18,8 @@ SHEETS = {
     "sets": "06_세트효과",
     "items": "07_아이템_설명",
     "skills": "08_스킬_마스터",
+    "monsterDrops": "10_몬스터_보상드롭",
+    "dungeonSpawns": "11_던전_출현테이블",
 }
 
 
@@ -34,8 +36,14 @@ def rows(sheet):
     return [{str(key).strip(): clean(value) for key, value in row.items()} for row in frame.to_dict("records")]
 
 
+def matrix(sheet):
+    frame = pd.read_excel(source, sheet_name=sheet, header=None).where(pd.notna, None)
+    return [[clean(value) for value in row] for row in frame.to_numpy().tolist()]
+
+
 payload = {key: rows(sheet) for key, sheet in SHEETS.items()}
-payload["meta"] = {"source": source.name, "version": "v2"}
+payload["gameConfig"] = matrix("12_게임확률_CONFIG")
+payload["meta"] = {"source": source.name, "version": "v4"}
 destination.parent.mkdir(parents=True, exist_ok=True)
 destination.write_text(
     f"/* Generated from {source.name}. Do not hand-edit. */\n"
