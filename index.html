@@ -47,9 +47,6 @@ const hullSource=selected||SLOT_PRESETS.find(p=>p[0]===hangar.hull&&p[1]===hanga
 const sailSource=SLOT_PRESETS.find(p=>p[0]===hangar.hull&&p[1]===hangar.sail)||hullSource;
 if(!hullSource)return [];
 let hullSlots=hullSource[3].filter(v=>!v[5]).map(v=>v.slice());
-if(hangar.hull==='leviathan'&&hangar.sail==='armored'&&hullSlots.filter(v=>v[4]===1).length===1){
-hullSlots.splice(4,0,[-160,0,.105,0,1]); // restored from Leviathan standard hull side 1
-}
 return [...hullSlots,...(hangar.sail==='streamlined'?[]:sailSource[3].filter(v=>v[5]).map(v=>v.slice()))];
 }
 function paintParts(q,x,y,scale){
