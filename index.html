@@ -41,8 +41,28 @@ const ASSEMBLY_PRESETS=[
 ];
 const SLOT_PRESETS=[["guardian","armored","armored",[[-156,-57,0.04,0,0],[136,-57,0.04,0,0],[-156,64,0.04,1,0],[136,64,0.04,1,0],[-130,7,0.06,0,1],[130,7,0.06,0,1],[-14,-42,0.04,0,0,1],[-16,22,0.06,0,1,1]]],["guardian","standard","standard",[[-180,-82,0.105,0,0],[185,-82,0.105,0,0],[-185,82,0.105,1,0],[180,82,0.105,1,0],[-160,0,0.105,0,1],[170,0,0.105,0,1],[13,8,0.055,0,1,1]]],["guardian","streamlined","light",[[-180,-82,0.105,0,0],[185,-82,0.105,0,0],[-185,82,0.105,1,0],[180,82,0.105,1,0],[-160,0,0.105,0,1],[170,0,0.105,0,1]]],["swift","streamlined","light",[[140,-59,0.06,0,0],[140,63,0.06,1,0],[-115,2,0.09,0,1],[40,0,0.09,0,1]]],["swift","standard","standard",[[-180,-63,0.105,0,0],[185,-63,0.105,0,0],[-185,63,0.105,1,0],[180,63,0.105,1,0],[-160,0,0.105,0,1],[170,0,0.105,0,1],[0,-32,0.055,0,0,1],[0,0,0.055,0,1,1]]],["swift","armored","armored",[[-180,-63,0.105,0,0],[185,-63,0.105,0,0],[-185,63,0.105,1,0],[180,63,0.105,1,0],[-160,0,0.105,0,1],[170,0,0.105,0,1],[0,-46,0.055,0,0,1],[0,0,0.055,0,1,1]]],["leviathan","armored","armored",[[-140,-59,0.03,0,0],[150,-59,0.03,0,0],[-140,65,0.03,1,0],[90,65,0.03,1,0],[208,-15,0.04,0,1],[-12,-38,0.03,0,0,1],[-12,20,0.04,0,1,1],[90,-59,0.03,0,0],[150,65,0.03,1,0]]],["leviathan","streamlined","light",[[-180,-103,0.105,0,0],[185,-103,0.105,0,0],[-185,103,0.105,1,0],[180,103,0.105,1,0],[-160,0,0.105,0,1],[170,0,0.105,0,1]]],["leviathan","standard","standard",[[-180,-103,0.105,0,0],[185,-103,0.105,0,0],[-185,103,0.105,1,0],[180,103,0.105,1,0],[-160,0,0.105,0,1],[170,0,0.105,0,1],[13,4,0.04,0,1,1]]]];
 for(const k of ['top_mount','side_mount']){const im=new Image();im.src=ASSET_ROOT+k+'.png';assetImages[k]=im}
+// Exact Swift slot objects from abyss_all_9_slot_assemblies (1).json.
+// Each source record preserves parent, asset, x/y, scale, rotation, flipY, visible, layer.
+const SWIFT_JSON_SLOTS={
+ hull:[
+ {id:'slot_2',name:'상부 2',parent:'hull',asset:'top_mount',x:140,y:-59,scale:.06,rotation:0,flipY:false,visible:true,layer:'front'},
+ {id:'slot_4',name:'하부 2',parent:'hull',asset:'top_mount',x:140,y:63,scale:.06,rotation:0,flipY:true,visible:true,layer:'front'},
+ {id:'slot_5',name:'측면 1',parent:'hull',asset:'side_mount',x:-115,y:2,scale:.09,rotation:0,flipY:false,visible:true,layer:'front'},
+ {id:'slot_6',name:'측면 2',parent:'hull',asset:'side_mount',x:40,y:0,scale:.09,rotation:0,flipY:false,visible:true,layer:'front'}
+ ],
+ streamlined:[],
+ standard:[
+ {id:'slot_7',name:'함교 상부',parent:'sail',asset:'top_mount',x:0,y:-32,scale:.055,rotation:0,flipY:false,visible:true,layer:'front'},
+ {id:'slot_8',name:'함교 측면',parent:'sail',asset:'side_mount',x:0,y:0,scale:.055,rotation:0,flipY:false,visible:true,layer:'front'}
+ ],
+ armored:[
+ {id:'slot_7',name:'함교 상부',parent:'sail',asset:'top_mount',x:0,y:-46,scale:.055,rotation:0,flipY:false,visible:true,layer:'front'},
+ {id:'slot_8',name:'함교 측면',parent:'sail',asset:'side_mount',x:0,y:0,scale:.055,rotation:0,flipY:false,visible:true,layer:'front'}
+ ]
+};
 function assemblySlots(){
-const hullSource=(hangar.hull==='swift'?SLOT_PRESETS.find(p=>p[0]==='swift'&&p[1]==='streamlined'):null)||SLOT_PRESETS.find(p=>p[0]===hangar.hull&&p[1]==='armored')||SLOT_PRESETS.find(p=>p[0]===hangar.hull);
+if(hangar.hull==='swift')return [...SWIFT_JSON_SLOTS.hull,...SWIFT_JSON_SLOTS[hangar.sail]].filter(v=>v.visible);
+const hullSource=SLOT_PRESETS.find(p=>p[0]===hangar.hull&&p[1]==='armored')||SLOT_PRESETS.find(p=>p[0]===hangar.hull);
 const sailSource=SLOT_PRESETS.find(p=>p[0]===hangar.hull&&p[1]===hangar.sail)||SLOT_PRESETS.find(p=>p[1]===hangar.sail);
 if(!hullSource)return [];
 return [...hullSource[3].filter(v=>!v[5]).map(v=>v.slice()),...(sailSource?sailSource[3].filter(v=>v[5]).map(v=>v.slice()):[])];
@@ -61,13 +81,20 @@ const factor=key.endsWith('_hull')?800/im.naturalWidth*k:k;
 q.drawImage(im,-im.naturalWidth*factor/2,-im.naturalHeight*factor/2,im.naturalWidth*factor,im.naturalHeight*factor);q.restore();
 }
 const slots=assemblySlots();
-const drawSlot=v=>piece((v[4]?'side':'top')+'_mount',v[0]+(v[5]?sailPreset[3]:0),v[1]+(v[5]?sailPreset[4]:0),v[2],!!v[3],v[6]||0);
-slots.filter(v=>v[7]==='back').forEach(drawSlot);
+const drawSlot=v=>{
+ if(Array.isArray(v)){
+  piece((v[4]?'side':'top')+'_mount',v[0]+(v[5]?sailPreset[3]:0),v[1]+(v[5]?sailPreset[4]:0),v[2],!!v[3],v[6]||0);
+ }else if(v.visible){
+  const parent=v.parent==='sail'?{x:sailPreset[3],y:sailPreset[4]}:{x:0,y:0};
+  piece(v.asset,v.x+parent.x,v.y+parent.y,v.scale,!!v.flipY,v.rotation||0);
+ }
+};
+slots.filter(v=>(Array.isArray(v)?v[7]:v.layer)==='back').forEach(drawSlot);
 piece(hangar.hull+'_hull',0,0,1,false);
 piece(hangar.fin+'_fin',finPreset[6],finPreset[7],finPreset[9],false);
 piece(hangar.fin+'_fin',finPreset[6],finPreset[8],finPreset[9],true);
 piece(hangar.sail+'_sail',sailPreset[3],sailPreset[4],sailPreset[5],false);
-slots.filter(v=>v[7]!=='back').forEach(drawSlot);
+slots.filter(v=>(Array.isArray(v)?v[7]:v.layer)!=='back').forEach(drawSlot);
 q.restore();
 }
 function drawHangarPreview(){const c=$('hangarCanvas');if(!c)return;const q=c.getContext('2d'),w=c.width,h=c.height;q.clearRect(0,0,w,h);q.fillStyle='#081b29';q.fillRect(0,0,w,h);q.strokeStyle='#1a3545';for(let x=0;x<w;x+=25){q.beginPath();q.moveTo(x,0);q.lineTo(x,h);q.stroke()}for(let y=0;y<h;y+=25){q.beginPath();q.moveTo(0,y);q.lineTo(w,y);q.stroke()}paintParts(q,w/2,h/2,1)}
