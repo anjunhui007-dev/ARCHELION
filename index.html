@@ -42,9 +42,9 @@ const ASSEMBLY_PRESETS=[
 function paintParts(q,x,y,scale){
 const preset=ASSEMBLY_PRESETS.find(p=>p[0]===hangar.hull&&p[1]===hangar.sail&&p[2]===hangar.fin);
 const fallback=ASSEMBLY_PRESETS.find(p=>p[0]===hangar.hull&&p[1]===hangar.sail)||ASSEMBLY_PRESETS.find(p=>p[0]===hangar.hull);
-const p=preset||fallback;const fit=Math.min(480/1100,245/560)*scale;
+const p=preset||fallback;const fit=Math.min(500/1100,250/560)*scale;
 q.save();q.translate(x,y);q.scale(fit,fit);
-function piece(key,px,py,k,flip){const im=assetImages[key];if(!im||!im.complete||!im.naturalWidth)return;q.save();q.translate(px,py);if(flip)q.scale(1,-1);q.drawImage(im,-im.naturalWidth*k/2,-im.naturalHeight*k/2,im.naturalWidth*k,im.naturalHeight*k);q.restore()}
+function piece(key,px,py,k,flip){const im=assetImages[key];if(!im||!im.complete||!im.naturalWidth)return;q.save();q.translate(px,py);if(flip)q.scale(1,-1);const actualScale=key.endsWith('_hull')?800/im.naturalWidth*k:k;q.drawImage(im,-im.naturalWidth*actualScale/2,-im.naturalHeight*actualScale/2,im.naturalWidth*actualScale,im.naturalHeight*actualScale);q.restore()}
 piece(hangar.hull+'_hull',0,0,1,false);
 piece((preset?hangar.fin:p[2])+'_fin',p[6],p[7],p[9],false);
 piece((preset?hangar.fin:p[2])+'_fin',p[6],p[8],p[9],true);
