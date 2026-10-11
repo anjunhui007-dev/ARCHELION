@@ -137,7 +137,7 @@ function openHangar(){
  let h='<h1>잠수함 격납고</h1><p>기체 부품 및 무장 슬롯 편집</p>';
  if(selected===null){
   h+='<div class="shop">';
-  for(const [id,label,opts] of [['hull','선체',hullNames],['sail','함교',sailNames],['fin','방향타',finNames']]){
+  for(const [id,label,opts] of [['hull','선체',hullNames],['sail','함교',sailNames],['fin','방향타',finNames]]){
    h+='<label>'+label+'<select data-part="'+id+'" style="width:100%;padding:12px;background:#143645;color:white">'+opts.map(v=>'<option '+(hangar[id]===v?'selected':'')+'>'+v+'</option>').join('')+'</select></label>';
   }h+='</div>';
  }
