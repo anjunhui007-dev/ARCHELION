@@ -104,8 +104,67 @@ piece(hangar.sail+'_sail',sailPreset[3],sailPreset[4],sailPreset[5],false);
 slots.filter(v=>(Array.isArray(v)?v[7]:v.layer)!=='back').forEach(drawSlot);
 q.restore();
 }
-function drawHangarPreview(){const c=$('hangarCanvas');if(!c)return;const q=c.getContext('2d'),w=c.width,h=c.height;q.clearRect(0,0,w,h);q.fillStyle='#081b29';q.fillRect(0,0,w,h);q.strokeStyle='#1a3545';for(let x=0;x<w;x+=25){q.beginPath();q.moveTo(x,0);q.lineTo(x,h);q.stroke()}for(let y=0;y<h;y+=25){q.beginPath();q.moveTo(0,y);q.lineTo(w,y);q.stroke()}paintParts(q,w/2,h/2,1)}
-function openHangar(){mode='hangar';panel.style.display='flex';let h='<h1>잠수함 격납고</h1><p>기체 부품 및 무장 슬롯 편집</p><div class="shop">';for(const [id,label,opts] of [['hull','선체',hullNames],['sail','함교',sailNames],['fin','방향타',finNames]]){h+='<label>'+label+'<select data-part="'+id+'" style="width:100%;padding:12px;background:#143645;color:white">'+opts.map(v=>'<option '+(hangar[id]===v?'selected':'')+'>'+v+'</option>').join('')+'</select></label>'}h+='</div><canvas id="hangarCanvas" width="520" height="260" style="display:block;width:100%;height:auto;aspect-ratio:2/1;max-width:520px;max-height:260px;object-fit:contain;margin:12px auto;border:1px solid #426578;border-radius:10px"></canvas><p style="font-size:11px">실제 PNG 조립 및 슬롯 에셋 · 저장된 9개 조합 좌표 적용</p><p>슬롯별 무장 · '+currentSlots().length+'개</p><div class="shop">';currentSlots().forEach((slot,i)=>{h+='<label>'+(slot.owner||'본체')+' · '+(slot.section||'상부')+' '+(currentSlots().slice(0,i+1).filter(v=>v.owner===slot.owner&&v.section===slot.section).length)+'번 슬롯<select data-weapon="'+i+'" style="width:100%;padding:10px;background:#143645;color:white">'+Object.entries(weaponDefs).map(([k,v])=>'<option value="'+k+'" '+(slot.weapon===k?'selected':'')+'>'+v[0]+'</option>').join('')+'</select></label>'});h+='</div><button id="hangarDone">정비소로 돌아가기</button>';card.innerHTML=h;drawHangarPreview();for(const im of Object.values(assetImages)){if(!im.complete)im.addEventListener('load',drawHangarPreview,{once:true})}card.querySelectorAll('[data-part]').forEach(e=>e.onchange=()=>{hangar[e.dataset.part]=e.value;saveHangar();openHangar()});card.querySelectorAll('[data-weapon]').forEach(e=>e.onchange=()=>{hangar.weapons[+e.dataset.weapon]=e.value;saveHangar();drawHangarPreview()});$('hangarDone').onclick=()=>shop('격납고 정비 완료')}
+let hangarSelectedSlot=null;
+function slotGeometry(i){
+ const v=assemblySlots()[i];if(!v)return null;
+ const isObject=!Array.isArray(v),isSail=isObject?v.parent==='sail':!!v[5],isSide=isObject?v.asset==='side_mount':!!v[4];
+ const sail=ASSEMBLY_PRESETS.find(p=>p[0]===hangar.hull&&p[1]===hangar.sail)||ASSEMBLY_PRESETS.find(p=>p[0]===hangar.hull);
+ const asset=isObject?v.asset:(isSide?'side_mount':'top_mount');
+ return {x:(isObject?v.x:v[0])+(isSail?sail[3]:0),y:(isObject?v.y:v[1])+(isSail?sail[4]:0),asset,scale:isObject?v.scale:v[2],rotation:isObject?(v.rotation||0):(v[6]||0),flip:isObject?!!v.flipY:!!v[3]};
+}
+function drawHangarPreview(){
+ const c=$('hangarCanvas');if(!c)return;const q=c.getContext('2d'),w=c.width,h=c.height;
+ q.clearRect(0,0,w,h);q.fillStyle='#081b29';q.fillRect(0,0,w,h);
+ q.strokeStyle='#1a3545';for(let x=0;x<w;x+=25){q.beginPath();q.moveTo(x,0);q.lineTo(x,h);q.stroke()}for(let y=0;y<h;y+=25){q.beginPath();q.moveTo(0,y);q.lineTo(w,y);q.stroke()}
+ const fit=Math.min(500/(1100*1.30),250/(560*1.30))*({swift:.78,guardian:1,leviathan:1.30}[hangar.hull]||1);
+ const target=hangarSelectedSlot===null?null:slotGeometry(hangarSelectedSlot);
+ q.save();
+ if(target){const zoom=2.8;q.translate(w/2,h/2);q.scale(zoom,zoom);q.translate(-w/2-fit*target.x,-h/2-fit*target.y)}
+ paintParts(q,w/2,h/2,1);
+ if(target){
+  const im=assetImages[target.asset];const pw=(im?.naturalWidth||100)*target.scale*fit,ph=(im?.naturalHeight||100)*target.scale*fit;
+  // Dashed white selection boundary follows the visible mount footprint.
+  q.save();q.translate(w/2+fit*target.x,h/2+fit*target.y);q.rotate(target.rotation*Math.PI/180);
+  q.strokeStyle='#ffffff';q.lineWidth=1.4/2.8;q.setLineDash([3/2.8,2/2.8]);q.shadowColor='#ffffff';q.shadowBlur=3/2.8;
+  q.strokeRect(-pw/2-2/2.8,-ph/2-2/2.8,pw+4/2.8,ph+4/2.8);q.restore();
+ }
+ q.restore();
+}
+function openHangar(){
+ mode='hangar';panel.style.display='flex';
+ const slots=currentSlots();if(hangarSelectedSlot!==null&&!slots[hangarSelectedSlot])hangarSelectedSlot=null;
+ const selected=hangarSelectedSlot;
+ let h='<h1>잠수함 격납고</h1><p>기체 부품 및 무장 슬롯 편집</p>';
+ if(selected===null){
+  h+='<div class="shop">';
+  for(const [id,label,opts] of [['hull','선체',hullNames],['sail','함교',sailNames],['fin','방향타',finNames']]){
+   h+='<label>'+label+'<select data-part="'+id+'" style="width:100%;padding:12px;background:#143645;color:white">'+opts.map(v=>'<option '+(hangar[id]===v?'selected':'')+'>'+v+'</option>').join('')+'</select></label>';
+  }h+='</div>';
+ }
+ h+='<canvas id="hangarCanvas" width="520" height="260" style="display:block;width:100%;height:auto;aspect-ratio:2/1;max-width:520px;max-height:260px;object-fit:contain;margin:12px auto;border:1px solid #426578;border-radius:10px"></canvas>';
+ if(selected===null){
+  h+='<p>슬롯별 무장 · '+slots.length+'개</p><div class="shop">';
+  slots.forEach((slot,i)=>{
+   const num=slots.slice(0,i+1).filter(v=>v.owner===slot.owner&&v.section===slot.section).length;
+   h+='<button data-slot="'+i+'" style="padding:12px;text-align:left;background:#143645;color:white;border:1px solid #426578;border-radius:8px">'+slot.owner+' · '+slot.section+' '+num+'번 슬롯 <span style="color:#9cd7e8">— '+(weaponDefs[slot.weapon]?.[0]||'미장착')+' ›</span></button>';
+  });
+  h+='</div><button id="hangarDone">정비소로 돌아가기</button>';
+ }else{
+  const slot=slots[selected],num=slots.slice(0,selected+1).filter(v=>v.owner===slot.owner&&v.section===slot.section).length;
+  h+='<h2>'+slot.owner+' · '+slot.section+' '+num+'번 슬롯</h2><p>장착 무기 선택</p><div class="shop">';
+  Object.entries(weaponDefs).forEach(([key,def])=>{
+   h+='<button data-weapon-choice="'+key+'" style="padding:14px;background:'+(slot.weapon===key?'#275f70':'#143645')+';color:white;border:1px solid '+(slot.weapon===key?'#b9eafa':'#426578')+';border-radius:8px;text-align:left">'+(slot.weapon===key?'✓ ':'')+def[0]+' <span style="font-size:11px;color:#9bc5d4">· 임시 무기</span></button>';
+  });
+  h+='</div><button id="hangarBack" style="margin-top:12px">← 이전으로 돌아가기</button>';
+ }
+ card.innerHTML=h;drawHangarPreview();
+ for(const im of Object.values(assetImages)){if(!im.complete)im.addEventListener('load',drawHangarPreview,{once:true})}
+ card.querySelectorAll('[data-part]').forEach(e=>e.onchange=()=>{hangar[e.dataset.part]=e.value;hangarSelectedSlot=null;saveHangar();openHangar()});
+ card.querySelectorAll('[data-slot]').forEach(e=>e.onclick=()=>{hangarSelectedSlot=+e.dataset.slot;openHangar()});
+ card.querySelectorAll('[data-weapon-choice]').forEach(e=>e.onclick=()=>{hangar.weapons[selected]=e.dataset.weaponChoice;saveHangar();openHangar()});
+ if($('hangarBack'))$('hangarBack').onclick=()=>{hangarSelectedSlot=null;openHangar()};
+ if($('hangarDone'))$('hangarDone').onclick=()=>{hangarSelectedSlot=null;shop('격납고 정비 완료')};
+}
 const maxHp=()=>150+lv.hull*45,moveSpeed=()=>185+lv.engine*27;
 function reset(){scrollX=0;phase='wave';bossSpawned=false;goldPop=[];interceptors=[];interceptCooldown=0;raidTimer=rand(6,10);enemyShots=[];mines=[];mineTimer=rand(5,9);bubbles=[];bubbleTick=0;player={x:W*.25,y:H*.52,vx:0,vy:0,hp:maxHp(),angle:0,slots:[],inv:0};boost=100;enemies=[];torps=[];bullets=[];particles=[];waves=[];spawned=0;spawnTimer=1.1;time=0;const positions=[[-80,-24,'deck'],[72,-24,'deck'],[-45,18,'side'],[45,18,'side']];player.slots=currentSlots();mode='play';panel.style.display='none'}
 const upgradeDefs=[['hull','선체 보강','최대 체력 +45',900],['engine','추진기 강화','이동 속도 +27',1100],['gun','함포 강화','화력·연사 향상',1350],['radar','요격 레이더','어뢰 요격 우선 거리 증가',950]];
