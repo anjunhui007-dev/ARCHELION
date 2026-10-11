@@ -23,7 +23,7 @@ const sailSlots={streamlined:[],standard:[[13,8,'side']],armored:[[-14,-42,'deck
 const weaponDefs={gun:['기관포',19,490,.73,'#f6e4b5'],laser:['레이저',13,720,.45,'#75ecff'],torpedo:['어뢰',65,270,2.2,'#ffb477'],scatter:['산탄포',10,420,1.1,'#d8c3ff']};
 let hangar=(()=>{try{return Object.assign({hull:'guardian',sail:'standard',fin:'standard',weapons:[]},JSON.parse(localStorage.getItem(HKEY))||{})}catch{return {hull:'guardian',sail:'standard',fin:'standard',weapons:[]}}})();
 function saveHangar(){localStorage.setItem(HKEY,JSON.stringify(hangar))}
-function currentSlots(){let a=hullSlots[hangar.hull]||hullSlots.guardian,b=sailSlots[hangar.sail]||[];return [...a,...b.map(v=>[v[0],v[1]-75,v[2]])].map((v,i)=>({x:v[0]*.19,y:v[1]*.19,type:v[2],angle:0,cool:.3+i*.15,weapon:hangar.weapons[i]||'gun'}))}
+function currentSlots(){return assemblySlots().map((v,i)=>({x:(v[0]+(v[5]?(ASSEMBLY_PRESETS.find(p=>p[0]===hangar.hull&&p[1]===hangar.sail)||ASSEMBLY_PRESETS.find(p=>p[0]===hangar.hull))[3]:0))*.19,y:(v[1]+(v[5]?(ASSEMBLY_PRESETS.find(p=>p[0]===hangar.hull&&p[1]===hangar.sail)||ASSEMBLY_PRESETS.find(p=>p[0]===hangar.hull))[4]:0))*.19,type:v[4]?'side':'deck',angle:0,cool:.3+i*.15,weapon:hangar.weapons[i]||'gun'}))}
 
 
 const ASSET_ROOT='https://raw.githubusercontent.com/anjunhui007-dev/ARCHELION/main/';
@@ -35,13 +35,23 @@ const ASSEMBLY_PRESETS=[
 ['swift','streamlined','light',-11,-65,.24,-315,-50,65,.18],
 ['swift','standard','standard',-10,-75,.24,-315,-50,65,.18],
 ['swift','armored','armored',-15,-90,.21,-315,-50,65,.18],
-['leviathan','armored','standard',-13,-86,.17,-347,-57,63,.18],
+['leviathan','armored','armored',-13,-86,.17,-347,-57,63,.18],
 ['leviathan','streamlined','light',-12,-66,.20,-347,-54,56,.18],
 ['leviathan','standard','standard',-16,-75,.20,-347,-59,61,.18]
 ];
 const SLOT_PRESETS=[["guardian","armored","armored",[[-156,-57,0.04,0,0],[136,-57,0.04,0,0],[-156,64,0.04,1,0],[136,64,0.04,1,0],[-130,7,0.06,0,1],[130,7,0.06,0,1],[-14,-42,0.04,0,0,1],[-16,22,0.06,0,1,1]]],["guardian","standard","standard",[[-180,-82,0.105,0,0],[185,-82,0.105,0,0],[-185,82,0.105,1,0],[180,82,0.105,1,0],[-160,0,0.105,0,1],[170,0,0.105,0,1],[13,8,0.055,0,1,1]]],["guardian","streamlined","light",[[-180,-82,0.105,0,0],[185,-82,0.105,0,0],[-185,82,0.105,1,0],[180,82,0.105,1,0],[-160,0,0.105,0,1],[170,0,0.105,0,1]]],["swift","streamlined","light",[[140,-59,0.06,0,0],[140,63,0.06,1,0],[-115,2,0.09,0,1],[40,0,0.09,0,1]]],["swift","standard","standard",[[-180,-63,0.105,0,0],[185,-63,0.105,0,0],[-185,63,0.105,1,0],[180,63,0.105,1,0],[-160,0,0.105,0,1],[170,0,0.105,0,1],[0,-32,0.055,0,0,1],[0,0,0.055,0,1,1]]],["swift","armored","armored",[[-180,-63,0.105,0,0],[185,-63,0.105,0,0],[-185,63,0.105,1,0],[180,63,0.105,1,0],[-160,0,0.105,0,1],[170,0,0.105,0,1],[0,-46,0.055,0,0,1],[0,0,0.055,0,1,1]]],["leviathan","armored","armored",[[-140,-59,0.03,0,0],[150,-59,0.03,0,0],[-140,65,0.03,1,0],[90,65,0.03,1,0],[208,-15,0.04,0,1],[-12,-38,0.03,0,0,1],[-12,20,0.04,0,1,1],[90,-59,0.03,0,0],[150,65,0.03,1,0]]],["leviathan","streamlined","light",[[-180,-103,0.105,0,0],[185,-103,0.105,0,0],[-185,103,0.105,1,0],[180,103,0.105,1,0],[-160,0,0.105,0,1],[170,0,0.105,0,1]]],["leviathan","standard","standard",[[-180,-103,0.105,0,0],[185,-103,0.105,0,0],[-185,103,0.105,1,0],[180,103,0.105,1,0],[-160,0,0.105,0,1],[170,0,0.105,0,1],[13,4,0.04,0,1,1]]]];
 for(const k of ['top_mount','side_mount']){const im=new Image();im.src=ASSET_ROOT+k+'.png';assetImages[k]=im}
-function assemblySlots(){const hull=SLOT_PRESETS.find(p=>p[0]===hangar.hull&&p[1]===hangar.sail)||SLOT_PRESETS.find(p=>p[0]===hangar.hull);const base=SLOT_PRESETS.find(p=>p[0]===hangar.hull&&p[1]===hangar.sail&&p[2]===hangar.fin);if(base)return base[3];return hull?hull[3]:[]}
+function assemblySlots(){
+const selected=SLOT_PRESETS.find(p=>p[0]===hangar.hull&&p[1]===hangar.sail&&p[2]===hangar.fin);
+const hullSource=selected||SLOT_PRESETS.find(p=>p[0]===hangar.hull&&p[1]===hangar.sail)||SLOT_PRESETS.find(p=>p[0]===hangar.hull);
+const sailSource=SLOT_PRESETS.find(p=>p[0]===hangar.hull&&p[1]===hangar.sail)||hullSource;
+if(!hullSource)return [];
+let hullSlots=hullSource[3].filter(v=>!v[5]).map(v=>v.slice());
+if(hangar.hull==='leviathan'&&hangar.sail==='armored'&&hullSlots.filter(v=>v[4]===1).length===1){
+hullSlots.splice(4,0,[-160,0,.105,0,1]); // restored from Leviathan standard hull side 1
+}
+return [...hullSlots,...(hangar.sail==='streamlined'?[]:sailSource[3].filter(v=>v[5]).map(v=>v.slice()))];
+}
 function paintParts(q,x,y,scale){
 const sailPreset=ASSEMBLY_PRESETS.find(p=>p[0]===hangar.hull&&p[1]===hangar.sail)||ASSEMBLY_PRESETS.find(p=>p[0]===hangar.hull);
 const finPreset=ASSEMBLY_PRESETS.find(p=>p[0]===hangar.hull&&p[2]===hangar.fin)||ASSEMBLY_PRESETS.find(p=>p[0]===hangar.hull);
