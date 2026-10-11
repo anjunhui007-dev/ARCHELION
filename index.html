@@ -23,8 +23,16 @@ const sailSlots={streamlined:[],standard:[[13,8,'side']],armored:[[-14,-42,'deck
 const weaponDefs={gun:['기관포',19,490,.73,'#f6e4b5'],laser:['레이저',13,720,.45,'#75ecff'],torpedo:['어뢰',65,270,2.2,'#ffb477'],scatter:['산탄포',10,420,1.1,'#d8c3ff']};
 let hangar=(()=>{try{return Object.assign({hull:'guardian',sail:'standard',fin:'standard',weapons:[]},JSON.parse(localStorage.getItem(HKEY))||{})}catch{return {hull:'guardian',sail:'standard',fin:'standard',weapons:[]}}})();
 function saveHangar(){localStorage.setItem(HKEY,JSON.stringify(hangar))}
-function currentSlots(){return assemblySlots().map((v,i)=>({x:(v[0]+(v[5]?(ASSEMBLY_PRESETS.find(p=>p[0]===hangar.hull&&p[1]===hangar.sail)||ASSEMBLY_PRESETS.find(p=>p[0]===hangar.hull))[3]:0))*.19,y:(v[1]+(v[5]?(ASSEMBLY_PRESETS.find(p=>p[0]===hangar.hull&&p[1]===hangar.sail)||ASSEMBLY_PRESETS.find(p=>p[0]===hangar.hull))[4]:0))*.19,type:v[4]?'side':'deck',angle:0,cool:.3+i*.15,weapon:hangar.weapons[i]||'gun'}))}
-
+function currentSlots(){
+const sail=ASSEMBLY_PRESETS.find(p=>p[0]===hangar.hull&&p[1]===hangar.sail)||ASSEMBLY_PRESETS.find(p=>p[0]===hangar.hull);
+return assemblySlots().map((v,i)=>{
+const object=!Array.isArray(v);
+const isSail=object?v.parent==='sail':!!v[5];
+const isSide=object?v.asset==='side_mount':!!v[4];
+const sx=object?v.x:v[0],sy=object?v.y:v[1];
+return {x:(sx+(isSail?sail[3]:0))*.19,y:(sy+(isSail?sail[4]:0))*.19,type:isSide?'side':'deck',angle:0,cool:.3+i*.15,weapon:hangar.weapons[i]||'gun'};
+});
+}
 
 const ASSET_ROOT='https://raw.githubusercontent.com/anjunhui007-dev/ARCHELION/main/';
 const assetImages={};for(const part of [...hullNames.map(x=>x+'_hull'),...sailNames.map(x=>x+'_sail'),...finNames.map(x=>x+'_fin')]){const im=new Image();im.src=ASSET_ROOT+part+'.png';assetImages[part]=im}
