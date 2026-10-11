@@ -111,7 +111,7 @@ const BOOSTER_STYLES={
 };
 function boosterConfig(){return BOOSTER_STYLES[hangar.booster]||BOOSTER_STYLES.azure}
 function drawPlasma(q,x,y,scale,active,tick){
- const c=boosterConfig(),length=(active?96:64)*scale,half=10*scale;
+ const c=boosterConfig(),length=(active?192:128)*scale,half=19*scale;
  q.save();q.translate(x,y);q.globalCompositeOperation='lighter';
  const wave=Math.sin(tick*17)*.055;
  for(let layer=0;layer<3;layer++){
