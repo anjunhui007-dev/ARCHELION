@@ -42,11 +42,10 @@ const ASSEMBLY_PRESETS=[
 const SLOT_PRESETS=[["guardian","armored","armored",[[-156,-57,0.04,0,0],[136,-57,0.04,0,0],[-156,64,0.04,1,0],[136,64,0.04,1,0],[-130,7,0.06,0,1],[130,7,0.06,0,1],[-14,-42,0.04,0,0,1],[-16,22,0.06,0,1,1]]],["guardian","standard","standard",[[-180,-82,0.105,0,0],[185,-82,0.105,0,0],[-185,82,0.105,1,0],[180,82,0.105,1,0],[-160,0,0.105,0,1],[170,0,0.105,0,1],[13,8,0.055,0,1,1]]],["guardian","streamlined","light",[[-180,-82,0.105,0,0],[185,-82,0.105,0,0],[-185,82,0.105,1,0],[180,82,0.105,1,0],[-160,0,0.105,0,1],[170,0,0.105,0,1]]],["swift","streamlined","light",[[140,-59,0.06,0,0],[140,63,0.06,1,0],[-115,2,0.09,0,1],[40,0,0.09,0,1]]],["swift","standard","standard",[[-180,-63,0.105,0,0],[185,-63,0.105,0,0],[-185,63,0.105,1,0],[180,63,0.105,1,0],[-160,0,0.105,0,1],[170,0,0.105,0,1],[0,-32,0.055,0,0,1],[0,0,0.055,0,1,1]]],["swift","armored","armored",[[-180,-63,0.105,0,0],[185,-63,0.105,0,0],[-185,63,0.105,1,0],[180,63,0.105,1,0],[-160,0,0.105,0,1],[170,0,0.105,0,1],[0,-46,0.055,0,0,1],[0,0,0.055,0,1,1]]],["leviathan","armored","armored",[[-140,-59,0.03,0,0],[150,-59,0.03,0,0],[-140,65,0.03,1,0],[90,65,0.03,1,0],[208,-15,0.04,0,1],[-12,-38,0.03,0,0,1],[-12,20,0.04,0,1,1],[90,-59,0.03,0,0],[150,65,0.03,1,0]]],["leviathan","streamlined","light",[[-180,-103,0.105,0,0],[185,-103,0.105,0,0],[-185,103,0.105,1,0],[180,103,0.105,1,0],[-160,0,0.105,0,1],[170,0,0.105,0,1]]],["leviathan","standard","standard",[[-180,-103,0.105,0,0],[185,-103,0.105,0,0],[-185,103,0.105,1,0],[180,103,0.105,1,0],[-160,0,0.105,0,1],[170,0,0.105,0,1],[13,4,0.04,0,1,1]]]];
 for(const k of ['top_mount','side_mount']){const im=new Image();im.src=ASSET_ROOT+k+'.png';assetImages[k]=im}
 function assemblySlots(){
-const exact=SLOT_PRESETS.find(p=>p[0]===hangar.hull&&p[1]===hangar.sail&&p[2]===hangar.fin);
-const hullSource=exact||SLOT_PRESETS.find(p=>p[0]===hangar.hull&&p[1]===hangar.sail)||SLOT_PRESETS.find(p=>p[0]===hangar.hull);
-const sailSource=SLOT_PRESETS.find(p=>p[0]===hangar.hull&&p[1]===hangar.sail)||hullSource;
-if(!hullSource)return[];
-return [...hullSource[3].filter(v=>!v[5]).map(v=>v.slice()),...sailSource[3].filter(v=>v[5]).map(v=>v.slice())];
+const hullSource=SLOT_PRESETS.find(p=>p[0]===hangar.hull&&p[1]==='armored')||SLOT_PRESETS.find(p=>p[0]===hangar.hull);
+const sailSource=SLOT_PRESETS.find(p=>p[0]===hangar.hull&&p[1]===hangar.sail)||SLOT_PRESETS.find(p=>p[1]===hangar.sail);
+if(!hullSource)return [];
+return [...hullSource[3].filter(v=>!v[5]).map(v=>v.slice()),...(sailSource?sailSource[3].filter(v=>v[5]).map(v=>v.slice()):[])];
 }
 function paintParts(q,x,y,scale){
 const sailPreset=ASSEMBLY_PRESETS.find(p=>p[0]===hangar.hull&&p[1]===hangar.sail)||ASSEMBLY_PRESETS.find(p=>p[0]===hangar.hull);
@@ -62,13 +61,13 @@ const factor=key.endsWith('_hull')?800/im.naturalWidth*k:k;
 q.drawImage(im,-im.naturalWidth*factor/2,-im.naturalHeight*factor/2,im.naturalWidth*factor,im.naturalHeight*factor);q.restore();
 }
 const slots=assemblySlots();
-const slotDraw=v=>piece((v[4]?'side':'top')+'_mount',v[0]+(v[5]?sailPreset[3]:0),v[1]+(v[5]?sailPreset[4]:0),v[2],!!v[3],v[6]||0);
-slots.filter(v=>v[7]==='back').forEach(slotDraw);
+const drawSlot=v=>piece((v[4]?'side':'top')+'_mount',v[0]+(v[5]?sailPreset[3]:0),v[1]+(v[5]?sailPreset[4]:0),v[2],!!v[3],v[6]||0);
+slots.filter(v=>v[7]==='back').forEach(drawSlot);
 piece(hangar.hull+'_hull',0,0,1,false);
 piece(hangar.fin+'_fin',finPreset[6],finPreset[7],finPreset[9],false);
 piece(hangar.fin+'_fin',finPreset[6],finPreset[8],finPreset[9],true);
 piece(hangar.sail+'_sail',sailPreset[3],sailPreset[4],sailPreset[5],false);
-slots.filter(v=>v[7]!=='back').forEach(slotDraw);
+slots.filter(v=>v[7]!=='back').forEach(drawSlot);
 q.restore();
 }
 function drawHangarPreview(){const c=$('hangarCanvas');if(!c)return;const q=c.getContext('2d'),w=c.width,h=c.height;q.clearRect(0,0,w,h);q.fillStyle='#081b29';q.fillRect(0,0,w,h);q.strokeStyle='#1a3545';for(let x=0;x<w;x+=25){q.beginPath();q.moveTo(x,0);q.lineTo(x,h);q.stroke()}for(let y=0;y<h;y+=25){q.beginPath();q.moveTo(0,y);q.lineTo(w,y);q.stroke()}paintParts(q,w/2,h/2,1)}
