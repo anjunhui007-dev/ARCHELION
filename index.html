@@ -40,15 +40,16 @@ const ASSEMBLY_PRESETS=[
 ['leviathan','standard','standard',-16,-75,.20,-347,-59,61,.18]
 ];
 function paintParts(q,x,y,scale){
-const preset=ASSEMBLY_PRESETS.find(p=>p[0]===hangar.hull&&p[1]===hangar.sail&&p[2]===hangar.fin);
-const fallback=ASSEMBLY_PRESETS.find(p=>p[0]===hangar.hull&&p[1]===hangar.sail)||ASSEMBLY_PRESETS.find(p=>p[0]===hangar.hull);
-const p=preset||fallback;const fit=Math.min(500/1100,250/560)*scale;
+const sailPreset=ASSEMBLY_PRESETS.find(p=>p[0]===hangar.hull&&p[1]===hangar.sail)||ASSEMBLY_PRESETS.find(p=>p[0]===hangar.hull);
+const finPreset=ASSEMBLY_PRESETS.find(p=>p[0]===hangar.hull&&p[2]===hangar.fin)||ASSEMBLY_PRESETS.find(p=>p[0]===hangar.hull);
+if(!sailPreset||!finPreset)return;
+const fit=Math.min(500/1100,250/560)*scale;
 q.save();q.translate(x,y);q.scale(fit,fit);
 function piece(key,px,py,k,flip){const im=assetImages[key];if(!im||!im.complete||!im.naturalWidth)return;q.save();q.translate(px,py);if(flip)q.scale(1,-1);const actualScale=key.endsWith('_hull')?800/im.naturalWidth*k:k;q.drawImage(im,-im.naturalWidth*actualScale/2,-im.naturalHeight*actualScale/2,im.naturalWidth*actualScale,im.naturalHeight*actualScale);q.restore()}
 piece(hangar.hull+'_hull',0,0,1,false);
-piece((preset?hangar.fin:p[2])+'_fin',p[6],p[7],p[9],false);
-piece((preset?hangar.fin:p[2])+'_fin',p[6],p[8],p[9],true);
-piece(hangar.sail+'_sail',p[3],p[4],p[5],false);
+piece(hangar.fin+'_fin',finPreset[6],finPreset[7],finPreset[9],false);
+piece(hangar.fin+'_fin',finPreset[6],finPreset[8],finPreset[9],true);
+piece(hangar.sail+'_sail',sailPreset[3],sailPreset[4],sailPreset[5],false);
 q.restore()
 }
 function drawHangarPreview(){const c=$('hangarCanvas');if(!c)return;const q=c.getContext('2d'),w=c.width,h=c.height;q.clearRect(0,0,w,h);q.fillStyle='#081b29';q.fillRect(0,0,w,h);q.strokeStyle='#1a3545';for(let x=0;x<w;x+=25){q.beginPath();q.moveTo(x,0);q.lineTo(x,h);q.stroke()}for(let y=0;y<h;y+=25){q.beginPath();q.moveTo(0,y);q.lineTo(w,y);q.stroke()}paintParts(q,w/2,h/2,1)}
