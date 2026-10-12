@@ -393,11 +393,11 @@ for(const name of backgroundAssetNames){
 function readyBackground(name){const im=backgroundAssets[name];return !!(im&&im.complete&&im.naturalWidth&&im.naturalHeight)}
 function drawTiledBackground(name,speed,alpha=1){
  if(!readyBackground(name))return false;
- const im=backgroundAssets[name],h=H,w=h*im.naturalWidth/im.naturalHeight;
+ const im=backgroundAssets[name],h=name==='distant_terrain'?H*.58:H,w=h*im.naturalWidth/im.naturalHeight;
  if(!(w>0))return false;
  const shift=((scrollX*speed)%w+w)%w;
  ctx.save();ctx.globalAlpha=alpha;
- for(let x=-shift;x<W;x+=w)ctx.drawImage(im,x,0,w,h);
+ for(let x=-shift;x<W;x+=w)ctx.drawImage(im,x,name==='distant_terrain'?H-h*.62:0,w,h);
  ctx.restore();return true;
 }
 function drawBackgroundAssets(){
@@ -415,10 +415,10 @@ function drawBackgroundAssets(){
   if(!readyBackground(name))continue;
   const im=backgroundAssets[name];
   const random=n=>{const z=Math.sin(n*78.233+19.17)*43758.5453;return z-Math.floor(z)};
-  const height=H*(.18+.17*random(i+29));
+  const height=H*(.14+.12*random(i+29));
   const width=height*im.naturalWidth/im.naturalHeight;
   const x=i*gap-offset+(random(i+77)-.5)*gap*.30;
-  ctx.save();ctx.globalAlpha=.45;ctx.drawImage(im,x,H-height*.92,width,height);ctx.restore();
+  ctx.save();ctx.globalAlpha=1;ctx.drawImage(im,x,H-height*.72,width,height);ctx.restore();
  }
  return hasBase;
 }
