@@ -535,6 +535,7 @@ function sinkExplosion(e){if(e.boss){explosion(e.x-65,e.y-18,'medium',1.5);explo
 function burst(x,y,n,color='#94d6e3'){const count=Math.min(5,Math.max(2,Math.ceil(n*.12)));for(let i=0;i<count;i++){const life=rand(.22,.48);particles.push({x,y,vx:rand(-24,24),vy:rand(-40,-9),life,max:life,color:'#a3c9d7',r:rand(.65,1.5)})}}
 function exhaustBubble(x,y,vx,vy,boosted=false){if(bubbles.length>220)bubbles.shift();const life=rand(.65,1.45);bubbles.push({x:x+rand(-3,3),y:y+rand(-5,5),vx:vx+rand(-15,12),vy:vy+rand(-13,4),r:rand(boosted?1.0:.55,boosted?2.4:1.7),life,max:life,alpha:rand(.16,.38)})}
 function weaponDetectionRange(){return Math.max(280,Math.min(450,W*.48))}
+function targetDetectionRange(target){return target.boss?Math.max(590,W*.84)+180:weaponDetectionRange()}
 function weaponRangeFor(weapon){const bossReach=Math.max(590,W*.84);return ({gun:Math.max(340,W*.54,bossReach),heavy:Math.max(410,W*.66,bossReach),scatter:Math.max(220,W*.36,bossReach)})[weapon]||Math.max(340,W*.48,bossReach)}
 function weaponMuzzles(slot){
  const i=player.slots.indexOf(slot),geo=slotGeometry(i),prefix=weaponSprites[slot.weapon];
@@ -577,11 +578,11 @@ function fireGun(slot,target){
  for(const m of muzzles){if(Math.random()<.45){const life=rand(.12,.24);particles.push({x:m.x,y:m.y,vx:rand(-12,12),vy:rand(-12,6),life,max:life,color:'#c9b8a0',r:rand(.35,.8)})}}
 }
 function targetFor(slot){
- const sx=player.x+slot.x,sy=player.y+slot.y,range=weaponDetectionRange();
+ const sx=player.x+slot.x,sy=player.y+slot.y;
  let best=null,score=Infinity;
  for(const t of enemies){
   const dx=t.x-sx,dy=t.y-sy,d=Math.hypot(dx,dy);
-  if(d>range)continue;
+  if(d>targetDetectionRange(t))continue;
   const a=Math.atan2(dy,dx);
   const forward=dx>0&&Math.abs(t.y-player.y)<Math.max(36,Math.min(85,dx*.22));if(slot.type==='deck'&&slot.weapon!=='torpedo'&&!forward&&(slot.section==='하부'?dy<0:dy>0))continue;
   let priority=d;
@@ -611,7 +612,7 @@ const ix=clamp((keys.d?1:0)+Math.max(0,joyX),0,1),iy=clamp((keys.s?1:0)-(keys.w?
   if(slot.weapon==='side_emp'){
    continue;
   }
-  const targets=slot.weapon==='side_interceptor'?torps.filter(t=>t.life>0&&!t.disabled&&Math.hypot(t.x-sx,t.y-sy)<Math.max(195,W*.34)):enemies.filter(e=>Math.hypot(e.x-sx,e.y-sy)<weaponDetectionRange());
+  const targets=slot.weapon==='side_interceptor'?torps.filter(t=>t.life>0&&!t.disabled&&Math.hypot(t.x-sx,t.y-sy)<Math.max(195,W*.34)):enemies.filter(e=>Math.hypot(e.x-sx,e.y-sy)<targetDetectionRange(e));
   targets.sort((a,b)=>Math.hypot(a.x-sx,a.y-sy)-Math.hypot(b.x-sx,b.y-sy));
   const t=targets[0],desired=t?Math.atan2(t.y-sy,t.x-sx):player.angle;
   const diff=Math.atan2(Math.sin(desired-slot.angle),Math.cos(desired-slot.angle));slot.angle+=clamp(diff,-dt*4,-0+dt*4);
@@ -627,7 +628,7 @@ const ix=clamp((keys.d?1:0)+Math.max(0,joyX),0,1),iy=clamp((keys.s?1:0)-(keys.w?
     while(slot.tick>=.1*partCooldownFactor('side_laser')){slot.tick-=.1*partCooldownFactor('side_laser');const damage=scaledDamage('side_laser');t.hp-=damage;showDamage(t.x,t.y,damage);burst(t.x,t.y,1,'#7ceaff')}}
   }else if(slot.weapon==='side_railgun'&&slot.cool<=0){
    slot.cool=8*partCooldownFactor('side_railgun');slot.railGlow=.24;sideEffects.push({type:'rail',x:mx,y:my,angle:slot.angle,age:0,duration:.28});
-   for(const e of enemies){const dx=e.x-mx,dy=e.y-my,along=dx*Math.cos(slot.angle)+dy*Math.sin(slot.angle),across=Math.abs(-dx*Math.sin(slot.angle)+dy*Math.cos(slot.angle));if(along>0&&along<weaponDetectionRange()&&across<e.r+6){const damage=scaledDamage('side_railgun');e.hp-=damage;showDamage(e.x,e.y,damage);burst(e.x,e.y,12,'#9ceaff')}}
+   for(const e of enemies){const dx=e.x-mx,dy=e.y-my,along=dx*Math.cos(slot.angle)+dy*Math.sin(slot.angle),across=Math.abs(-dx*Math.sin(slot.angle)+dy*Math.cos(slot.angle));if(along>0&&along<targetDetectionRange(e)&&across<e.r+6){const damage=scaledDamage('side_railgun');e.hp-=damage;showDamage(e.x,e.y,damage);burst(e.x,e.y,12,'#9ceaff')}}
   }
  }
  for(const slot of player.slots){if(slot.railGlow>0)slot.railGlow=Math.max(0,slot.railGlow-dt);if(slot.weapon==='side_laser'){slot.laserTime=Math.max(0,(slot.laserTime||0)-dt);if(!slot.laserTime){slot.laserTarget=null}}}
