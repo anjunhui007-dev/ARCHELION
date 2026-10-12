@@ -75,7 +75,7 @@ const sailSource=SLOT_PRESETS.find(p=>p[0]===hangar.hull&&p[1]===hangar.sail)||S
 if(!hullSource)return [];
 return [...hullSource[3].filter(v=>!v[5]).map(v=>v.slice()),...(sailSource?sailSource[3].filter(v=>v[5]).map(v=>v.slice()):[])];
 }
-function paintParts(q,x,y,scale){
+function paintParts(q,x,y,scale,showWeapons=true){
 const sailPreset=ASSEMBLY_PRESETS.find(p=>p[0]===hangar.hull&&p[1]===hangar.sail)||ASSEMBLY_PRESETS.find(p=>p[0]===hangar.hull);
 const finPreset=ASSEMBLY_PRESETS.find(p=>p[0]===hangar.hull&&p[2]===hangar.fin)||ASSEMBLY_PRESETS.find(p=>p[0]===hangar.hull);
 if(!sailPreset||!finPreset)return;
@@ -103,7 +103,7 @@ piece(hangar.fin+'_fin',finPreset[6],finPreset[7],finPreset[9],false);
 piece(hangar.fin+'_fin',finPreset[6],finPreset[8],finPreset[9],true);
 piece(hangar.sail+'_sail',sailPreset[3],sailPreset[4],sailPreset[5],false);
 slots.filter(v=>(Array.isArray(v)?v[7]:v.layer)!=='back').forEach(drawSlot);
-assemblySlots().forEach((v,i)=>{const geo=slotGeometry(i),weapon=hangar.weapons[i]||'gun';if(geo&&geo.asset!=='side_mount'&&weaponSprites[weapon])drawMountedWeapon(q,weapon,geo,0)});q.restore();}
+if(showWeapons)assemblySlots().forEach((v,i)=>{const geo=slotGeometry(i),weapon=hangar.weapons[i]||'gun';if(geo&&geo.asset!=='side_mount'&&weaponSprites[weapon])drawMountedWeapon(q,weapon,geo,0)});q.restore();}
 function drawMountedWeapon(q,weapon,geo,angle=0){
  const prefix=weaponSprites[weapon];if(!prefix)return;
  const base=assetImages[prefix+'_base'],barrel=assetImages[prefix+'_barrel'],mount=assetImages[geo.asset];
@@ -120,7 +120,7 @@ function battleAssemblyFit(){return Math.min(500/(1100*1.30),250/(560*1.30))*({s
 function paintBattlePlayer(q){
  const fit=battleAssemblyFit();
  q.save();q.scale(fit,fit);drawPlasma(q,-395,0,1,!!((keys.shift||touchBoost)&&boost>0&&player.vx>10),time);q.restore();
- q.save();q.scale(.50,.50);paintParts(q,0,0,1);q.restore();
+ q.save();q.scale(.50,.50);paintParts(q,0,0,1,false);q.restore();
  for(let i=0;i<player.slots.length;i++){const slot=player.slots[i];if(slot.type!=='deck'||!weaponSprites[slot.weapon])continue;const geo=slotGeometry(i);if(!geo)continue;
  q.save();q.scale(fit,fit);drawMountedWeapon(q,slot.weapon,geo,slot.angle-player.angle);q.restore();}
 }
