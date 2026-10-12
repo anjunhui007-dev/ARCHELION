@@ -333,7 +333,7 @@ const ix=clamp((keys.d?1:0)+Math.max(0,joyX),0,1),iy=clamp((keys.s?1:0)-(keys.w?
   if(slot.weapon==='side_laser'){
    slot.aim=(slot.aim||0)+dt;
    if(slot.aim>=.3){slot.laserTarget=t;slot.laserStart=[mx,my];slot.laserTime=.08;slot.tick=(slot.tick||0)+dt;
-    while(slot.tick>=.1){slot.tick-=.1;t.hp-=3;burst(t.x,t.y,1,'#7ceaff')}}
+    while(slot.tick>=.1){slot.tick-=.1;t.hp-=6;burst(t.x,t.y,1,'#7ceaff')}}
   }else if(slot.weapon==='side_railgun'&&slot.cool<=0){
    slot.cool=3;slot.railGlow=.24;sideEffects.push({type:'rail',x:mx,y:my,angle:slot.angle,age:0,duration:.28});
    for(const e of enemies){const dx=e.x-mx,dy=e.y-my,along=dx*Math.cos(slot.angle)+dy*Math.sin(slot.angle),across=Math.abs(-dx*Math.sin(slot.angle)+dy*Math.cos(slot.angle));if(along>0&&along<550&&across<e.r+6){e.hp-=110;burst(e.x,e.y,12,'#9ceaff')}}
