@@ -1,0 +1,11 @@
+{
+  "name": "ABYSS — STEEL DEPTHS",
+  "short_name": "ABYSS",
+  "description": "Submarine roguelike game",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#061019",
+  "theme_color": "#061019"
+}
