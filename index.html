@@ -395,10 +395,10 @@ for(const name of oceanLayerNames){
 function oceanReady(name){const im=oceanLayers[name];return im&&im.complete&&im.naturalWidth>0}
 function oceanTile(name,parallax,opacity=1){
  if(!oceanReady(name))return false;
- const im=oceanLayers[name],drawHeight=H,tw=im.naturalWidth*drawHeight/im.naturalHeight;
+ const im=oceanLayers[name],drawHeight=name==='deepsea_base'?H:Math.min(H,H*.90),tw=im.naturalWidth*drawHeight/im.naturalHeight;
  const offset=((scrollX*parallax)%tw+tw)%tw;
  ctx.save();ctx.globalAlpha=opacity;
- for(let x=-offset;x<W;x+=tw)ctx.drawImage(im,x,0,tw,drawHeight);
+ for(let x=-offset;x<W;x+=tw)ctx.drawImage(im,x,name==='deepsea_base'?0:H-drawHeight,tw,drawHeight);
  ctx.restore();return true;
 }
 function drawOceanLayers(){
