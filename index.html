@@ -20,7 +20,7 @@ const SHIP_SCALE=.62,ENEMY_SCALE=.34;
 const HKEY='abyss-hangar-v1', hullNames=['swift','guardian','leviathan'],sailNames=['streamlined','standard','armored'],finNames=['light','standard','armored'];
 const hullSlots={swift:[[140,-59,'deck'],[140,63,'deck'],[-115,2,'side'],[40,0,'side']],guardian:[[-156,-57,'deck'],[136,-57,'deck'],[-156,64,'deck'],[136,64,'deck'],[-130,7,'side'],[130,7,'side']],leviathan:[[-140,-59,'deck'],[150,-59,'deck'],[-140,65,'deck'],[90,65,'deck'],[208,-15,'side'],[90,-59,'deck'],[150,65,'deck']]};
 const sailSlots={streamlined:[],standard:[[13,8,'side']],armored:[[-14,-42,'deck'],[-16,22,'side']]};
-const weaponDefs={gun:['자동 기관포',19,490,.73,'#f6e4b5'],heavy:['중량 함포',75,530,2.1,'#ffd39a'],scatter:['산탄 발사기',10,420,1.1,'#d8c3ff'],laser:['레이저',13,720,.45,'#75ecff'],torpedo:['어뢰',65,270,2.2,'#ffb477']};
+const weaponDefs={gun:['자동 기관포',16,650,.22,'#f6e4b5'],heavy:['중량 함포',85,380,2.4,'#ffd39a'],scatter:['산탄 발사기',9,480,1.15,'#d8c3ff'],laser:['레이저',13,720,.45,'#75ecff'],torpedo:['어뢰',65,270,2.2,'#ffb477']};
 const mainWeaponKeys=['gun','heavy','scatter'];const weaponSprites={gun:'autocannon',heavy:'heavy_cannon',scatter:'scattergun'};
 let hangar=(()=>{try{return Object.assign({hull:'guardian',sail:'standard',fin:'standard',weapons:[]},JSON.parse(localStorage.getItem(HKEY))||{})}catch{return {hull:'guardian',sail:'standard',fin:'standard',weapons:[]}}})();
 function saveHangar(){localStorage.setItem(HKEY,JSON.stringify(hangar))}
@@ -233,8 +233,60 @@ function spawnMine(){const y=rand(Math.max(110,H*.65),Math.max(125,H-105));mines
 function addGold(x,y,amount){money+=amount;goldPop.push({x,y,amount,life:1.25});}
 function burst(x,y,n,color='#94d6e3'){for(let i=0;i<n;i++)particles.push({x,y,vx:rand(-100,100),vy:rand(-100,100),life:rand(.3,.9),max:.9,color,r:rand(1,4)})}
 function exhaustBubble(x,y,vx,vy,boosted=false){if(bubbles.length>220)bubbles.shift();const life=rand(.65,1.45);bubbles.push({x:x+rand(-3,3),y:y+rand(-5,5),vx:vx+rand(-15,12),vy:vy+rand(-13,4),r:rand(boosted?1.8:1,boosted?4.6:3.2),life,max:life,alpha:rand(.16,.38)})}
-function fireGun(slot,target){const weapon=weaponDefs[slot.weapon]||weaponDefs.gun;let sx=player.x+slot.x,sy=player.y+slot.y,dx=target?target.x-sx:1,dy=target?target.y-sy:0,a=target?Math.atan2(dy,dx):0;a=slot.angle;const speed=weapon[2]+lv.gun*35;for(let i=0;i<(slot.weapon==='scatter'?3:1);i++){const aa=a+(slot.weapon==='scatter'?(i-1)*.14:0);bullets.push({x:sx+Math.cos(aa)*22,y:sy+Math.sin(aa)*22,vx:Math.cos(aa)*speed,vy:Math.sin(aa)*speed,life:1.5,damage:weapon[1]+lv.gun*7,r:3.5,color:weapon[4]})}burst(sx+Math.cos(a)*22,sy+Math.sin(a)*22,3,'#e9d3a2')}
-function targetFor(slot){let sx=player.x+slot.x,sy=player.y+slot.y,best=null,score=Infinity;for(const t of enemies){let d=Math.hypot(t.x-sx,t.y-sy);if(d>390+lv.radar*32)continue;if(d<score){score=d;best=t}}return best}
+const weaponRange={gun:420,heavy:500,scatter:220};
+function weaponMuzzles(slot){
+ const i=player.slots.indexOf(slot),geo=slotGeometry(i),prefix=weaponSprites[slot.weapon];
+ const base=assetImages[prefix+'_base'],barrel=assetImages[prefix+'_barrel'],mount=assetImages[geo?.asset];
+ if(!geo||!base?.naturalWidth||!barrel?.naturalWidth||!mount?.naturalWidth)return null;
+ const factor=mount.naturalWidth*geo.scale/base.naturalWidth*.96;
+ const pivotY=base.naturalHeight*.73-base.naturalHeight*.94;
+ const fit=battleAssemblyFit()*factor;
+ const angle=slot.angle-player.angle,mirror=geo.flip?-1:1;
+ // All three bores share the barrel tip, but have separate lateral muzzle positions.
+ const tipX=barrel.naturalWidth*.94-barrel.naturalWidth*.16;
+ const tipYs=slot.weapon==='scatter'?[-barrel.naturalHeight*.17,0,barrel.naturalHeight*.17]:[0];
+ return tipYs.map(y=>{
+  const xx=tipX,yy=y;
+  const lx=(xx*Math.cos(angle)-yy*Math.sin(angle))*fit;
+  const ly=(xx*Math.sin(angle)+yy*Math.cos(angle))*fit*mirror;
+  const mx=geo.x*battleAssemblyFit(),my=(geo.y-mount.naturalHeight*geo.scale*.5+1+pivotY*factor*mirror)*battleAssemblyFit();
+  const localX=mx+lx,localY=my+ly;
+  return {x:player.x+localX*Math.cos(player.angle)-localY*Math.sin(player.angle),
+   y:player.y+localX*Math.sin(player.angle)+localY*Math.cos(player.angle)};
+ });
+}
+function fireGun(slot,target){
+ if(!target)return;
+ const weapon=weaponDefs[slot.weapon];if(!weapon)return;
+ const muzzles=weaponMuzzles(slot);if(!muzzles)return;
+ const a=slot.angle,speed=weapon[2]+lv.gun*35;
+ const offsets=slot.weapon==='scatter'?[-.31,-.21,-.105,0,.105,.21,.31]:[0];
+ offsets.forEach((off,j)=>{
+  const muzzle=muzzles[slot.weapon==='scatter'?(j<2?0:j<5?1:2):0];
+  const aa=a+off,forward=4;
+  bullets.push({x:muzzle.x+Math.cos(a)*forward,y:muzzle.y+Math.sin(a)*forward,
+   vx:Math.cos(aa)*speed,vy:Math.sin(aa)*speed,
+   life:(weaponRange[slot.weapon]||420)/speed,
+   damage:weapon[1]+lv.gun*(slot.weapon==='scatter'?2:7),
+   r:slot.weapon==='heavy'?7:3.5,color:weapon[4],
+   explosive:slot.weapon==='heavy',range:slot.weapon==='heavy'?55:0});
+ });
+ for(const m of muzzles)burst(m.x,m.y,slot.weapon==='scatter'?2:4,'#e9d3a2');
+}
+function targetFor(slot){
+ const sx=player.x+slot.x,sy=player.y+slot.y,range=(weaponRange[slot.weapon]||390)+lv.radar*12;
+ let best=null,score=Infinity;
+ for(const t of enemies){
+  const dx=t.x-sx,dy=t.y-sy,d=Math.hypot(dx,dy);
+  if(d>range)continue;
+  const a=Math.atan2(dy,dx);
+  if(slot.type==='deck'&&(slot.section==='하부'?dy<0:dy>0))continue;
+  let priority=d;
+  if(slot.weapon==='heavy')priority-=enemies.filter(e=>Math.hypot(e.x-t.x,e.y-t.y)<55).length*30;
+  if(priority<score){score=priority;best=t;}
+ }
+ return best;
+}
 function launchInterceptor(){if(interceptCooldown>0||interceptors.length>=2)return;const candidates=torps.filter(t=>t.life>0&&!interceptors.some(m=>m.target===t)&&t.x>player.x-35&&Math.hypot(t.x-player.x,t.y-player.y)<280+lv.radar*20);if(!candidates.length)return;candidates.sort((a,b)=>Math.hypot(a.x-player.x,a.y-player.y)-Math.hypot(b.x-player.x,b.y-player.y));const target=candidates[0];interceptors.push({x:player.x+30,y:player.y-9,vx:0,vy:0,target,life:2.6});interceptCooldown=4;burst(player.x+30,player.y-9,7,'#92e8ff')}
 const HIT_POLYS=[
 [[-117,0],[-101,-15],[-75,-23],[-45,-27],[25,-27],[76,-24],[101,-18],[122,0],[106,14],[89,22],[45,26],[-44,26],[-89,22],[-109,12]],
@@ -245,7 +297,7 @@ const HIT_POLYS=[
 function playerHullHit(wx,wy,r=0){const dx=wx-player.x,dy=wy-player.y,c=Math.cos(player.angle),sn=Math.sin(player.angle),x=(dx*c+dy*sn)/SHIP_SCALE,y=(-dx*sn+dy*c)/SHIP_SCALE,rr=r/SHIP_SCALE;for(const poly of HIT_POLYS){let inside=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const a=poly[i],b=poly[j];if((a[1]>y)!==(b[1]>y)&&x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0])inside=!inside;const vx=b[0]-a[0],vy=b[1]-a[1],t=clamp(((x-a[0])*vx+(y-a[1])*vy)/(vx*vx+vy*vy||1),0,1);if(Math.hypot(x-a[0]-t*vx,y-a[1]-t*vy)<=rr)return true}if(inside)return true}return false}
 function update(dt){time+=dt;noticeTimer-=dt;if(noticeTimer<=0)$('notice').textContent='';if(mode!=='play')return;
 const ix=clamp((keys.d?1:0)+Math.max(0,joyX),0,1),iy=clamp((keys.s?1:0)-(keys.w?1:0)+joyY,-1,1),len=Math.max(1,Math.hypot(ix,iy)),moving=Math.hypot(ix,iy)>.08,fast=(keys.shift||touchBoost)&&boost>0&&moving,mult=fast?1.9:1;boost=clamp(boost+(fast?-38:17)*dt,0,100);const approach=(v,target,rate)=>v+clamp(target-v,-rate*dt,rate*dt);player.vx=approach(player.vx,ix/len*moveSpeed()*mult,moveSpeed()*(ix>0?1.8:2.5));player.vy=approach(player.vy,iy/len*moveSpeed()*.88*mult,moveSpeed()*(Math.abs(iy)>.08?1.85:2.6));player.vx=Math.max(0,player.vx);player.x=clamp(player.x+player.vx*dt,90,W-90);player.y=clamp(player.y+player.vy*dt,78,H-72);const anchorX=Math.max(70,Math.min(W*.25,185));const cameraShift=Math.max(0,player.x-anchorX);if(cameraShift>0){player.x-=cameraShift;scrollX+=cameraShift;for(const e of enemies)e.x-=cameraShift;for(const t of torps)t.x-=cameraShift;for(const b of bullets)b.x-=cameraShift;for(const m of interceptors)m.x-=cameraShift;for(const b of enemyShots)b.x-=cameraShift;for(const p of particles)p.x-=cameraShift;for(const g of goldPop)g.x-=cameraShift;for(const m of mines)m.x-=cameraShift;for(const b of bubbles)b.x-=cameraShift;}if(player.y<=78||player.y>=H-72)player.vy=0;player.angle=approach(player.angle,clamp(-player.vy/moveSpeed()*.075,-.09,.09),.32);player.inv=Math.max(0,player.inv-dt);const speedNow=Math.hypot(player.vx,player.vy);if(speedNow>18){bubbleTick+=dt*(fast?38:13)*clamp(speedNow/moveSpeed(),.35,1.8);while(bubbleTick>=1){bubbleTick--;const ca=Math.cos(player.angle),sa=Math.sin(player.angle);exhaustBubble(player.x-125*SHIP_SCALE*ca,player.y-125*SHIP_SCALE*sa,-rand(22,65)-(fast?65:0),-player.vy*.16,fast)}}else bubbleTick=0;
-interceptCooldown=Math.max(0,interceptCooldown-dt);launchInterceptor();for(const slot of player.slots){if(slot.weapon==='none')continue;slot.cool-=dt;const t=targetFor(slot);slot.angle=t?Math.atan2(t.y-player.y-slot.y,t.x-player.x-slot.x):0;if(slot.type==='deck'){const down=slot.section==='하부';if(down&&slot.angle<0)slot.angle=slot.angle< -Math.PI/2?-Math.PI:0;if(!down&&slot.angle>0)slot.angle=slot.angle>Math.PI/2?Math.PI:0;}if(slot.cool<=0){fireGun(slot,t);const aimedDelay=Math.max(.16,(weaponDefs[slot.weapon]||weaponDefs.gun)[3]-lv.gun*.055)*(slot.type==='side'?.85:1);slot.cool=t?aimedDelay:aimedDelay*2.4}}
+interceptCooldown=Math.max(0,interceptCooldown-dt);launchInterceptor();for(const slot of player.slots){if(slot.weapon==='none')continue;slot.cool-=dt;const t=targetFor(slot);const desired=t?Math.atan2(t.y-player.y-slot.y,t.x-player.x-slot.x):(slot.section==='하부'?Math.PI/2:-Math.PI/2);const delta=Math.atan2(Math.sin(desired-slot.angle),Math.cos(desired-slot.angle));slot.angle+=clamp(delta,-dt*3.8,dt*3.8);if(t&&Math.abs(delta)<.15&&slot.cool<=0){fireGun(slot,t);slot.cool=Math.max(.16,(weaponDefs[slot.weapon]||weaponDefs.gun)[3]-lv.gun*.055)}}
 const total=9+stage*4;const forwardRatio=clamp(player.vx/Math.max(1,moveSpeed()),0,1.9);spawnTimer-=dt*(1+forwardRatio*.9);if(phase==='wave'){raidTimer-=dt;if(raidTimer<=0)spawnTorpedoRaid();mineTimer-=dt;if(mineTimer<=0)spawnMine()}if(phase==='wave'&&spawned<total&&spawnTimer<=0){if(spawned%6===5){const y=rand(65,H-65);for(let j=0;j<3;j++)launchTorpedo(W+25+j*32,clamp(y+(j-1)*64,35,H-35),110+stage*4,.7);flash('⚠ 어뢰 단독 공격!')}else spawnEnemy();spawned++;spawnTimer=Math.max(.5,1.22-stage*.035)*rand(.75,1.3)}
 for(const e of enemies){const dy=player.y-e.y,dx=player.x-e.x;const targetAngle=clamp(Math.atan2(dy,Math.max(100,Math.abs(dx))),-.32,.32);e.angle+=clamp(targetAngle-e.angle,-dt*.7,dt*.7);if(e.boss){const gap=e.desiredGap,err=(player.x+gap)-e.x;const targetV=clamp(player.vx+err*1.15,-moveSpeed()*.75,moveSpeed()*1.9);e.followV+=clamp(targetV-e.followV,-moveSpeed()*1.25*dt,moveSpeed()*1.25*dt);e.x+=e.followV*dt;e.x=Math.max(player.x+135,e.x)}else{const stopX=player.x+115;e.x-=e.speed*(e.x>stopX?1:.14)*dt;}e.y+=clamp(dy,-1,1)*Math.min(Math.abs(dy),e.boss?36:49)*dt*.85;e.bubbleTick=(e.bubbleTick||0)+dt*(e.boss?12:5);while(e.bubbleTick>=1){e.bubbleTick--;exhaustBubble(e.x+(e.boss?108:47),e.y+rand(-5,5),rand(13,40),rand(-12,2),false)}if(e.boss)e.y=clamp(e.y,90,H-80);e.fire-=dt;if(e.gunner&&!e.boss){e.burstGap-=dt;if(e.burstLeft>0&&e.burstGap<=0){const a=Math.atan2(player.y-e.y,player.x-e.x)+rand(-.065,.065),v=235+stage*6;enemyShots.push({x:e.x-34,y:e.y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:3.5,r:4});e.burstLeft--;e.burstGap=.18}if(e.fire<=0&&e.burstLeft===0){e.burstLeft=3;e.burstGap=0;e.fire=rand(3.3,5.4)}}
 if(e.boss){e.telegraph-=dt;if(e.telegraph<=0){for(let j=-1;j<=1;j++)launchTorpedo(e.x-55,e.y+j*26,130+stage*4,.55,true);e.telegraph=3.1}e.gunCooldown-=dt;e.burstGap-=dt;if(e.gunCooldown<=0&&e.burstLeft===0){e.burstLeft=4;e.burstGap=0;e.gunCooldown=rand(3.2,4.8)}if(e.burstLeft>0&&e.burstGap<=0){const a=Math.atan2(player.y-e.y,player.x-e.x)+rand(-.08,.08),v=255+stage*7;enemyShots.push({x:e.x-58,y:e.y-14,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:3.7,r:5,boss:true});e.burstLeft--;e.burstGap=.2}}else if(!e.gunner&&e.fire<=0){launchTorpedo(e.x-32,e.y,85+stage*5,1.1);e.fire=rand(2.5,4.5)/Math.min(1.8,1+stage*.06)}}
