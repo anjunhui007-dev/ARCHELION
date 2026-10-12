@@ -198,7 +198,7 @@ function drawHangarPreview(){
  q.save();
  if(target){
   // Zoom around the actual selected mount, using exactly the same scale as the ship.
-  const zoom=1.65;
+  const zoom=2.15;
   q.translate(w/2,h/2);q.scale(zoom,zoom);
   q.translate(-w/2-fit*target.x,-h/2-fit*target.y);
  }
