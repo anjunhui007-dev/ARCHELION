@@ -107,6 +107,12 @@
 }
 .gacha-pity-info{margin:9px 0;padding:9px 12px;border:1px solid #53778c;background:#0c293b;border-radius:9px;color:#c5dce7;text-align:center;font-size:13px}.gacha-pity-info strong{color:#f5c45c;font-size:16px}
 .gacha-pity-info{display:flex;justify-content:center;gap:18px;flex-wrap:wrap;align-items:center}.gacha-pity-info span{white-space:nowrap}@media (orientation:landscape) and (max-height:650px){.gacha-result-screen .gacha-pity-info{padding:5px 8px;margin:5px 0;font-size:11px}.gacha-result-screen .gacha-pity-info strong{font-size:13px}}
+.inventory-detail-body{grid-template-columns:minmax(0,30%) minmax(0,70%)!important;gap:12px!important;align-items:start!important}
+.inventory-detail-art{height:min(43dvh,225px)!important;padding:8px!important}
+.inventory-detail-art img,.inventory-detail-art canvas{max-height:195px!important}
+.inventory-upgrade-summary{border:1px solid #4b7485;background:#102e3c;border-radius:9px;padding:9px 12px;margin:9px 0;color:#bed7e0;font-size:12px;line-height:1.7}
+.inventory-upgrade-summary strong{color:#9be9c4}.inventory-upgrade-heading{color:#e4f4fc;font-weight:800;font-size:14px;margin-bottom:4px}.inventory-next-bonus{margin-top:5px;padding-top:5px;border-top:1px solid #365666}
+@media(max-width:550px){.inventory-detail-body{grid-template-columns:1fr!important}.inventory-detail-art{height:105px!important;min-height:0!important}.inventory-detail-art img,.inventory-detail-art canvas{max-height:100px!important}}
 </style><style>
 #card:has(.main-screen){max-width:none;width:100vw;height:100dvh;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;overflow:hidden}
 .main-screen{position:relative;width:100%;height:100%;overflow:hidden;background:radial-gradient(ellipse at 50% 48%,#193e4b 0%,#0b2431 40%,#040f19 100%)}
@@ -204,6 +210,19 @@ function inventorySpecs(category,key){
  if(key==='side_emp')return [['충전 쿨타임',+(9*partCooldownFactor(key)).toFixed(3)+'초'],['대상','적 어뢰·적'],['장착 제한','1개'],['특징','전자기 충격파']];
  return [];
 }
+function inventoryUpgradeSummary(category,key){
+ const level=partLevel(category,key),bonus=partAtk(category,key),rows=[];
+ if(key==='none')return '<div class="inventory-upgrade-summary">기본 장비 · 강화 불가</div>';
+ rows.push('<div>현재 강화 <strong>+'+level+'</strong> · 누적 공격력 <strong>+'+bonus+'</strong></div>');
+ if(category==='sail')rows.push('<div>함교 10강당 공격력 보너스 <strong>+'+Math.floor(level/10)+'%</strong></div>');
+ if(category==='weapon'){
+  const per=partWeaponCoef[key]||0;
+  if(per)rows.push('<div>공격력 계수 증가 <strong>+'+(per*level*100).toFixed(3)+'%p</strong></div>');
+  rows.push('<div>발사 간격 감소 <strong>'+Math.round((1-partCooldownFactor(key))*100)+'%</strong> (10강당 5%, 최대 50%)</div>');
+ }
+ rows.push('<div class="inventory-next-bonus">다음 강화 시 공격력 <strong>+'+({hull:5,sail:2,fin:3,booster:2,weapon:2}[category]||0)+'</strong>'+(category==='weapon'&&(partWeaponCoef[key]||0)?' · 계수 +'+((partWeaponCoef[key]||0)*100).toFixed(3)+'%p':'')+'</div>');
+ return '<div class="inventory-upgrade-summary"><div class="inventory-upgrade-heading">강화로 상승한 능력치</div>'+rows.join('')+'</div>';
+}
 function openInventoryDetail(category,key){
  const info=INVENTORY_INFO[category]?.[key];if(!info)return;
  const esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
@@ -214,7 +233,7 @@ function openInventoryDetail(category,key){
  const existing=document.querySelector('.inventory-detail-overlay');if(existing)existing.remove();
  const count=partOwned(category,key),level=partLevel(category,key),cost=partCost(category,key),rarity=PART_RARITY[category]?.[key]??0;
  const overlay=document.createElement('div');overlay.className='inventory-detail-overlay';overlay.style.setProperty('--rarity',RARITY_COLORS[rarity]);
- overlay.innerHTML='<div class="inventory-detail" role="dialog" aria-modal="true" aria-label="'+esc(info[0])+'"><button class="inventory-detail-close" aria-label="닫기">✕ 닫기</button><div class="inventory-detail-body"><div class="inventory-detail-art">'+art+'</div><div class="inventory-detail-info"><h2>'+esc(info[0])+' <small style="font-size:13px;color:'+RARITY_COLORS[rarity]+'">'+(key==='none'?'기본':RARITIES[rarity])+'</small></h2><p>'+esc(info[1])+'</p><h3 style="margin:12px 0 7px;font-size:14px">상세 스펙</h3><div class="inventory-specs">'+inventorySpecs(category,key).map(([name,value])=>'<div class="inventory-spec">'+esc(name)+'<strong style="display:block;color:#a9e9e5;margin-top:4px">'+esc(value)+'</strong></div>').join('')+'</div><div class="inventory-detail-bottom"><span>보유 재료 <strong>'+count+'개</strong><small style="display:block;color:#8db1be">강화 +'+level+' · 다음 강화 동일 파츠 '+cost+'개 · 보유 총합 '+partTotalLevel()+'강 (공격력 +'+Math.floor(partTotalLevel()/30)+'%)</small></span><button id="partUpgrade" '+(count<cost||key==='none'?'disabled':'')+'>강화 +1 · 재료 '+cost+'개</button></div></div></div>';
+ overlay.innerHTML='<div class="inventory-detail" role="dialog" aria-modal="true" aria-label="'+esc(info[0])+'"><button class="inventory-detail-close" aria-label="닫기">✕ 닫기</button><div class="inventory-detail-body"><div class="inventory-detail-art">'+art+'</div><div class="inventory-detail-info"><h2>'+esc(info[0])+' <small style="font-size:13px;color:'+RARITY_COLORS[rarity]+'">'+(key==='none'?'기본':RARITIES[rarity])+'</small></h2><p>'+esc(info[1])+'</p><h3 style="margin:12px 0 7px;font-size:14px">상세 스펙</h3><div class="inventory-specs">'+inventorySpecs(category,key).map(([name,value])=>'<div class="inventory-spec">'+esc(name)+'<strong style="display:block;color:#a9e9e5;margin-top:4px">'+esc(value)+'</strong></div>').join('')+'</div>'+inventoryUpgradeSummary(category,key)+'<div class="inventory-detail-bottom"><span>보유 재료 <strong>'+count+'개</strong><small style="display:block;color:#8db1be">강화 +'+level+' · 다음 강화 동일 파츠 '+cost+'개 · 보유 총합 '+partTotalLevel()+'강 (공격력 +'+Math.floor(partTotalLevel()/30)+'%)</small></span><button id="partUpgrade" '+(count<cost||key==='none'?'disabled':'')+'>강화 +1 · 재료 '+cost+'개</button></div></div></div>';
  document.body.appendChild(overlay);const upgradeButton=overlay.querySelector('#partUpgrade');if(upgradeButton)upgradeButton.onclick=()=>{if(upgradePart(category,key)){overlay.remove();openInventory(category);openInventoryDetail(category,key)}};
  const closeDetail=()=>overlay.remove();const closeButton=overlay.querySelector('.inventory-detail-close');closeButton.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();closeDetail()});closeButton.addEventListener('pointerup',e=>{e.preventDefault();e.stopPropagation();closeDetail()});
  overlay.onclick=e=>{if(e.target===overlay)overlay.remove()};
