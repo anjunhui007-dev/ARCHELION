@@ -54,6 +54,9 @@ const SHIP_SCALE=.62,ENEMY_SCALE=.31;
 const HKEY='abyss-hangar-v1', hullNames=['swift','guardian','leviathan'],sailNames=['streamlined','standard','armored'],finNames=['light','standard','armored'];
 const hullSlots={swift:[[140,-59,'deck'],[140,63,'deck'],[-115,2,'side'],[40,0,'side']],guardian:[[-156,-57,'deck'],[136,-57,'deck'],[-156,64,'deck'],[136,64,'deck'],[-130,7,'side'],[130,7,'side']],leviathan:[[-140,-59,'deck'],[150,-59,'deck'],[-140,65,'deck'],[90,65,'deck'],[208,-15,'side'],[90,-59,'deck'],[150,65,'deck']]};
 const sailSlots={streamlined:[],standard:[[13,8,'side']],armored:[[-14,-42,'deck'],[-16,22,'side']]};
+const baseAttack=()=>100;
+const weaponCoefficients={gun:.16,heavy:.85,scatter:.09,laser:.13,torpedo:1.10,side_laser:.06,side_railgun:2.20};
+const scaledDamage=(weapon)=>baseAttack()*weaponCoefficients[weapon];
 const weaponDefs={gun:['자동 기관포',16,650,.22,'#f6e4b5'],heavy:['중량 함포',85,380,2.4,'#ffd39a'],scatter:['산탄 발사기',9,480,1.65,'#d8c3ff'],laser:['레이저',13,720,.45,'#75ecff'],torpedo:['어뢰 사출 게이트',90,270,5,'#35e5d2']};
 const sideWeaponNames={none:'미장착',side_laser:'레이저 포탑',side_railgun:'레일건',side_interceptor:'요격 기관총',side_shield:'전자기 방어막',side_emp:'EMP 발생기'};
 const sidePivots={side_laser:[210,267],side_railgun:[210,267],side_interceptor:[215,267],side_shield:[224,267],side_emp:[220,267]};
@@ -366,7 +369,7 @@ function weaponMuzzles(slot){
 }
 function fireGun(slot,target){
  if(!target)return;
- if(slot.weapon==='torpedo'){const a=Math.atan2(target.y-player.y-slot.y,target.x-player.x-slot.x);bullets.push({x:player.x+slot.x,y:player.y+slot.y,vx:Math.cos(a)*390,vy:Math.sin(a)*390,speed:390,turn:5.2,homing:true,target,life:8,damage:90+lv.gun*9,r:6,color:boosterConfig().mid});return}
+ if(slot.weapon==='torpedo'){const a=Math.atan2(target.y-player.y-slot.y,target.x-player.x-slot.x);bullets.push({x:player.x+slot.x,y:player.y+slot.y,vx:Math.cos(a)*390,vy:Math.sin(a)*390,speed:390,turn:5.2,homing:true,target,life:8,damage:scaledDamage('torpedo'),r:6,color:boosterConfig().mid});return}
  const weapon=weaponDefs[slot.weapon];if(!weapon)return;
  const muzzles=weaponMuzzles(slot);if(!muzzles)return;
  const a=slot.angle,speed=weapon[2]+lv.gun*35+Math.max(0,player.vx);
@@ -377,7 +380,7 @@ function fireGun(slot,target){
   bullets.push({x:muzzle.x+Math.cos(a)*forward,y:muzzle.y+Math.sin(a)*forward,
    vx:Math.cos(aa)*speed,vy:Math.sin(aa)*speed,
    life:Math.max(4,(weaponRangeFor(slot.weapon)+lv.radar*12+W)/Math.max(1,speed-player.vx)),
-   damage:weapon[1]+lv.gun*(slot.weapon==='scatter'?2:7),
+   damage:scaledDamage(slot.weapon),
    r:slot.weapon==='heavy'?7:3.5,color:weapon[4],
    explosive:slot.weapon==='heavy',range:slot.weapon==='heavy'?55:0});
  });
@@ -431,10 +434,10 @@ const ix=clamp((keys.d?1:0)+Math.max(0,joyX),0,1),iy=clamp((keys.s?1:0)-(keys.w?
   if(slot.weapon==='side_laser'){
    slot.aim=(slot.aim||0)+dt;
    if(slot.aim>=.3){slot.laserTarget=t;slot.laserStart=[mx,my];slot.laserTime=.08;slot.tick=(slot.tick||0)+dt;
-    while(slot.tick>=.1){slot.tick-=.1;t.hp-=6;burst(t.x,t.y,1,'#7ceaff')}}
+    while(slot.tick>=.1){slot.tick-=.1;t.hp-=scaledDamage('side_laser');burst(t.x,t.y,1,'#7ceaff')}}
   }else if(slot.weapon==='side_railgun'&&slot.cool<=0){
    slot.cool=3;slot.railGlow=.24;sideEffects.push({type:'rail',x:mx,y:my,angle:slot.angle,age:0,duration:.28});
-   for(const e of enemies){const dx=e.x-mx,dy=e.y-my,along=dx*Math.cos(slot.angle)+dy*Math.sin(slot.angle),across=Math.abs(-dx*Math.sin(slot.angle)+dy*Math.cos(slot.angle));if(along>0&&along<Math.max(650,W*.9)&&across<e.r+6){e.hp-=180;burst(e.x,e.y,12,'#9ceaff')}}
+   for(const e of enemies){const dx=e.x-mx,dy=e.y-my,along=dx*Math.cos(slot.angle)+dy*Math.sin(slot.angle),across=Math.abs(-dx*Math.sin(slot.angle)+dy*Math.cos(slot.angle));if(along>0&&along<Math.max(650,W*.9)&&across<e.r+6){e.hp-=scaledDamage('side_railgun');burst(e.x,e.y,12,'#9ceaff')}}
   }
  }
  for(const slot of player.slots){if(slot.railGlow>0)slot.railGlow=Math.max(0,slot.railGlow-dt);if(slot.weapon==='side_laser'){slot.laserTime=Math.max(0,(slot.laserTime||0)-dt);if(!slot.laserTime){slot.laserTarget=null}}}
