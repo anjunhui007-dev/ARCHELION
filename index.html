@@ -105,6 +105,7 @@
  .gacha-screen:not(.gacha-result-screen) .gacha-gallery{grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:7px}
  .gacha-screen:not(.gacha-result-screen) .gacha-art{height:65px}
 }
+.gacha-pity-info{margin:9px 0;padding:9px 12px;border:1px solid #53778c;background:#0c293b;border-radius:9px;color:#c5dce7;text-align:center;font-size:13px}.gacha-pity-info strong{color:#f5c45c;font-size:16px}
 </style><style>
 #card:has(.main-screen){max-width:none;width:100vw;height:100dvh;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;overflow:hidden}
 .main-screen{position:relative;width:100%;height:100%;overflow:hidden;background:radial-gradient(ellipse at 50% 48%,#193e4b 0%,#0b2431 40%,#040f19 100%)}
@@ -232,14 +233,14 @@ function gachaDraw(type,n){
  for(let i=0;i<n;i++){
   const count=gachaData.count[type],legend=gachaData.legend[type],roll=Math.random()*100;
   let rarity=roll<50?0:roll<80?1:roll<95?2:roll<99?3:4;
-  if((count+1)%10===0)rarity=Math.max(rarity,3);
+  if(count+1>=10)rarity=Math.max(rarity,3);
   if(legend+1>=50)rarity=4;
   const choices=pool.filter(p=>p.rarity===rarity);
   const p=choices[Math.floor(Math.random()*choices.length)];
   if(!p)continue;
   results.push(p);
   const id=partId(p.category,p.key);partProgress.owned[id]=partOwned(p.category,p.key)+1;
-  gachaData.count[type]=count+1;gachaData.legend[type]=rarity===4?0:legend+1;gachaData.mileage+=10;
+  gachaData.count[type]=rarity>=3?0:count+1;gachaData.legend[type]=rarity===4?0:legend+1;gachaData.mileage+=10;
  }
  gems-=n*100;localStorage.setItem(GEM_KEY,String(gems));localStorage.setItem(PARTS_KEY,JSON.stringify(partProgress));saveGacha();
  mode='gacha';panel.style.display='flex';
@@ -248,7 +249,7 @@ function gachaDraw(type,n){
 }
 function gachaScreen(type='unarmed',msg=''){
  mode='gacha';panel.style.display='flex';
- card.innerHTML='<div class="gacha-screen"><div class="gacha-top"><div><small>ABYSS · PARTS SUPPLY</small><h2>파츠 가챠</h2></div><div class="gacha-wallet">◆ '+gems.toLocaleString()+' · MP '+gachaData.mileage.toLocaleString()+'</div></div><div class="gacha-tabs"><button data-gacha="unarmed" class="'+(type==='unarmed'?'active':'')+'">비무장 파츠</button><button data-gacha="armed" class="'+(type==='armed'?'active':'')+'">무장 파츠</button></div><div class="gacha-status"><strong>'+(type==='armed'?'무장':'비무장')+' 보급함</strong><div>영웅 보장까지 '+(10-gachaData.count[type]%10)+'회 · 전설 천장까지 '+(50-gachaData.legend[type])+'회</div></div><div class="gacha-banner-hero"><div class="gacha-hero-icon">'+(type==='armed'?'✦':'⬡')+'</div><div><strong>'+(type==='armed'?'무장 파츠 보급':'비무장 파츠 보급')+'</strong><p>보급함을 개봉하면 무작위 파츠가 지급됩니다.</p><small>획득 파츠는 도감에 강화 재료로 적립</small></div></div>'+(msg?'<p class="gacha-alert">'+msg+'</p>':'')+'<p class="gacha-rates">일반 50% · 고급 30% · 희귀 15% · 영웅 4% · 전설 1% | 10회마다 영웅 이상, 최대 50회 전설</p><div class="gacha-buttons"><button id="drawOne">1회 ◆100</button><button id="drawTen">10회 ◆1,000</button><button id="mileShop">마일리지 교환</button><button id="gemRefill">보석 충전</button><button id="gachaBack">메인 메뉴</button></div></div>';
+ card.innerHTML='<div class="gacha-screen"><div class="gacha-top"><div><small>ABYSS · PARTS SUPPLY</small><h2>파츠 가챠</h2></div><div class="gacha-wallet">◆ '+gems.toLocaleString()+' · MP '+gachaData.mileage.toLocaleString()+'</div></div><div class="gacha-tabs"><button data-gacha="unarmed" class="'+(type==='unarmed'?'active':'')+'">비무장 파츠</button><button data-gacha="armed" class="'+(type==='armed'?'active':'')+'">무장 파츠</button></div><div class="gacha-status"><strong>'+(type==='armed'?'무장':'비무장')+' 보급함</strong><div>영웅 이상 확정까지 '+(10-gachaData.count[type])+'회 · 전설 확정까지 '+(50-gachaData.legend[type])+'회</div></div><div class="gacha-banner-hero"><div class="gacha-hero-icon">'+(type==='armed'?'✦':'⬡')+'</div><div><strong>'+(type==='armed'?'무장 파츠 보급':'비무장 파츠 보급')+'</strong><p>보급함을 개봉하면 무작위 파츠가 지급됩니다.</p><small>획득 파츠는 도감에 강화 재료로 적립</small></div></div>'+(msg?'<p class="gacha-alert">'+msg+'</p>':'')+'<p class="gacha-rates">일반 50% · 고급 30% · 희귀 15% · 영웅 4% · 전설 1% | 10회마다 영웅 이상, 최대 50회 전설</p><div class="gacha-buttons"><button id="drawOne">1회 ◆100</button><button id="drawTen">10회 ◆1,000</button><button id="mileShop">마일리지 교환</button><button id="gemRefill">보석 충전</button><button id="gachaBack">메인 메뉴</button></div></div>';
  card.querySelectorAll('[data-gacha]').forEach(b=>b.onclick=()=>gachaScreen(b.dataset.gacha));
  $('drawOne').onclick=()=>gachaDraw(type,1);$('drawTen').onclick=()=>gachaDraw(type,10);$('mileShop').onclick=()=>mileageShop(type);$('gemRefill').onclick=gemShop;$('gachaBack').onclick=mainMenu;renderInventoryPreviews(card);
 }
