@@ -279,7 +279,7 @@ function fireGun(slot,target){
   const aa=a+off,forward=4;
   bullets.push({x:muzzle.x+Math.cos(a)*forward,y:muzzle.y+Math.sin(a)*forward,
    vx:Math.cos(aa)*speed,vy:Math.sin(aa)*speed,
-   life:(weaponRange[slot.weapon]||420)/speed,
+   life:(weaponRangeFor(slot.weapon)+lv.radar*12)/speed,
    damage:weapon[1]+lv.gun*(slot.weapon==='scatter'?2:7),
    r:slot.weapon==='heavy'?7:3.5,color:weapon[4],
    explosive:slot.weapon==='heavy',range:slot.weapon==='heavy'?55:0});
