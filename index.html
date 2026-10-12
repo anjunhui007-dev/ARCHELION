@@ -20,7 +20,8 @@ const SHIP_SCALE=.62,ENEMY_SCALE=.34;
 const HKEY='abyss-hangar-v1', hullNames=['swift','guardian','leviathan'],sailNames=['streamlined','standard','armored'],finNames=['light','standard','armored'];
 const hullSlots={swift:[[140,-59,'deck'],[140,63,'deck'],[-115,2,'side'],[40,0,'side']],guardian:[[-156,-57,'deck'],[136,-57,'deck'],[-156,64,'deck'],[136,64,'deck'],[-130,7,'side'],[130,7,'side']],leviathan:[[-140,-59,'deck'],[150,-59,'deck'],[-140,65,'deck'],[90,65,'deck'],[208,-15,'side'],[90,-59,'deck'],[150,65,'deck']]};
 const sailSlots={streamlined:[],standard:[[13,8,'side']],armored:[[-14,-42,'deck'],[-16,22,'side']]};
-const weaponDefs={gun:['기관포',19,490,.73,'#f6e4b5'],laser:['레이저',13,720,.45,'#75ecff'],torpedo:['어뢰',65,270,2.2,'#ffb477'],scatter:['산탄포',10,420,1.1,'#d8c3ff']};
+const weaponDefs={gun:['자동 기관포',19,490,.73,'#f6e4b5'],heavy:['중량 함포',75,530,2.1,'#ffd39a'],scatter:['산탄 발사기',10,420,1.1,'#d8c3ff'],laser:['레이저',13,720,.45,'#75ecff'],torpedo:['어뢰',65,270,2.2,'#ffb477']};
+const mainWeaponKeys=['gun','heavy','scatter'];const weaponSprites={gun:'autocannon',heavy:'heavy_cannon',scatter:'scattergun'};
 let hangar=(()=>{try{return Object.assign({hull:'guardian',sail:'standard',fin:'standard',weapons:[]},JSON.parse(localStorage.getItem(HKEY))||{})}catch{return {hull:'guardian',sail:'standard',fin:'standard',weapons:[]}}})();
 function saveHangar(){localStorage.setItem(HKEY,JSON.stringify(hangar))}
 function currentSlots(){
@@ -48,7 +49,7 @@ const ASSEMBLY_PRESETS=[
 ['leviathan','standard','standard',-16,-75,.20,-347,-59,61,.18]
 ];
 const SLOT_PRESETS=[["guardian","armored","armored",[[-156,-57,0.04,0,0],[136,-57,0.04,0,0],[-156,64,0.04,1,0],[136,64,0.04,1,0],[-130,7,0.06,0,1],[130,7,0.06,0,1],[-14,-42,0.04,0,0,1],[-16,22,0.06,0,1,1]]],["guardian","standard","standard",[[-180,-82,0.105,0,0],[185,-82,0.105,0,0],[-185,82,0.105,1,0],[180,82,0.105,1,0],[-160,0,0.105,0,1],[170,0,0.105,0,1],[13,8,0.055,0,1,1]]],["guardian","streamlined","light",[[-180,-82,0.105,0,0],[185,-82,0.105,0,0],[-185,82,0.105,1,0],[180,82,0.105,1,0],[-160,0,0.105,0,1],[170,0,0.105,0,1]]],["swift","streamlined","light",[[140,-59,0.06,0,0],[140,63,0.06,1,0],[-115,2,0.09,0,1],[40,0,0.09,0,1]]],["swift","standard","standard",[[-180,-63,0.105,0,0],[185,-63,0.105,0,0],[-185,63,0.105,1,0],[180,63,0.105,1,0],[-160,0,0.105,0,1],[170,0,0.105,0,1],[0,-32,0.055,0,0,1],[0,0,0.055,0,1,1]]],["swift","armored","armored",[[-180,-63,0.105,0,0],[185,-63,0.105,0,0],[-185,63,0.105,1,0],[180,63,0.105,1,0],[-160,0,0.105,0,1],[170,0,0.105,0,1],[0,-46,0.055,0,0,1],[0,0,0.055,0,1,1]]],["leviathan","armored","armored",[[-140,-59,0.03,0,0],[150,-59,0.03,0,0],[-140,65,0.03,1,0],[90,65,0.03,1,0],[208,-15,0.04,0,1],[-12,-38,0.03,0,0,1],[-12,20,0.04,0,1,1],[90,-59,0.03,0,0],[150,65,0.03,1,0]]],["leviathan","streamlined","light",[[-180,-103,0.105,0,0],[185,-103,0.105,0,0],[-185,103,0.105,1,0],[180,103,0.105,1,0],[-160,0,0.105,0,1],[170,0,0.105,0,1]]],["leviathan","standard","standard",[[-180,-103,0.105,0,0],[185,-103,0.105,0,0],[-185,103,0.105,1,0],[180,103,0.105,1,0],[-160,0,0.105,0,1],[170,0,0.105,0,1],[13,4,0.04,0,1,1]]]];
-for(const k of ['top_mount','side_mount']){const im=new Image();im.src=ASSET_ROOT+k+'.png';assetImages[k]=im}
+for(const k of ['autocannon_base','autocannon_barrel','heavy_cannon_base','heavy_cannon_barrel','scattergun_base','scattergun_barrel','top_mount','side_mount']){const im=new Image();im.src=ASSET_ROOT+k+'.png';assetImages[k]=im}
 // Exact Swift slot objects from abyss_all_9_slot_assemblies (1).json.
 // Each source record preserves parent, asset, x/y, scale, rotation, flipY, visible, layer.
 const SWIFT_JSON_SLOTS={
@@ -103,6 +104,13 @@ piece(hangar.fin+'_fin',finPreset[6],finPreset[8],finPreset[9],true);
 piece(hangar.sail+'_sail',sailPreset[3],sailPreset[4],sailPreset[5],false);
 slots.filter(v=>(Array.isArray(v)?v[7]:v.layer)!=='back').forEach(drawSlot);
 q.restore();
+ assemblySlots().forEach((v,i)=>{const side=Array.isArray(v)?!!v[4]:v.asset==='side_mount',weapon=hangar.weapons[i]||'gun';if(side||!weaponSprites[weapon])return;const geo=slotGeometry(i);if(geo)drawWeaponSprite(q,weapon,geo.x,geo.y,0,geo.flip,.27)});
+}
+function drawWeaponSprite(q,weapon,x,y,angle=0,flipped=false,scale=.27){
+ const prefix=weaponSprites[weapon];if(!prefix)return;const base=assetImages[prefix+'_base'],barrel=assetImages[prefix+'_barrel'];if(!base?.naturalWidth||!barrel?.naturalWidth)return;
+ q.save();q.translate(x,y);if(flipped)q.scale(1,-1);q.scale(scale,scale);
+ q.save();q.translate(0,-base.naturalHeight*.14);q.rotate(flipped?-angle:angle);q.drawImage(barrel,-barrel.naturalWidth*.16,-barrel.naturalHeight*.5);q.restore();
+ q.drawImage(base,-base.naturalWidth*.52,-base.naturalHeight*.73);q.restore();
 }
 const BOOSTER_STYLES={
  azure:{name:'청람 플라스마',outer:'#1686e8',mid:'#42c8ff',core:'#e2fcff'},
@@ -184,8 +192,8 @@ function openHangar(){
  }else{
   const slot=slots[selected],num=slots.slice(0,selected+1).filter(v=>v.owner===slot.owner&&v.section===slot.section).length;
   h+='<h2>'+slot.owner+' · '+slot.section+' '+num+'번 슬롯</h2><p>장착 무기 선택</p><div class="shop">';
-  Object.entries(weaponDefs).forEach(([key,def])=>{
-   h+='<button data-weapon-choice="'+key+'" style="padding:14px;background:'+(slot.weapon===key?'#275f70':'#143645')+';color:white;border:1px solid '+(slot.weapon===key?'#b9eafa':'#426578')+';border-radius:8px;text-align:left">'+(slot.weapon===key?'✓ ':'')+def[0]+' <span style="font-size:11px;color:#9bc5d4">· 임시 무기</span></button>';
+  Object.entries(weaponDefs).filter(([key])=>slot.type==='side'?!mainWeaponKeys.includes(key):mainWeaponKeys.includes(key)).forEach(([key,def])=>{
+   h+='<button data-weapon-choice="'+key+'" style="padding:14px;background:'+(slot.weapon===key?'#275f70':'#143645')+';color:white;border:1px solid '+(slot.weapon===key?'#b9eafa':'#426578')+';border-radius:8px;text-align:left">'+(slot.weapon===key?'✓ ':'')+def[0]+' <span style="font-size:11px;color:#9bc5d4">· 장착 무기</span></button>';
   });
   h+='</div><button id="hangarBack" style="margin-top:12px">← 이전으로 돌아가기</button>';
  }
