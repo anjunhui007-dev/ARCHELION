@@ -476,4 +476,43 @@ function frame(ts){
  }
  requestAnimationFrame(frame);
 }requestAnimationFrame(frame);
-document.addEventListener('gesturestart',e=>e.preventDefault(),{passive:false});document.addEventListener('gesturechange',e=>e.preventDefault(),{passive:false});document.addEventListener('gestureend',e=>e.preventDefault(),{passive:false});document.addEventListener('touchmove',e=>{if(e.touches.length>1||!e.target.closest('#panel'))e.preventDefault()},{passive:false});document.addEventListener('wheel',e=>{if(!e.target.closest('#panel'))e.preventDefault();else if(e.ctrlKey)e.preventDefault()},{passive:false});document.addEventListener('dblclick',e=>{if(!e.target.closest('#panel'))e.preventDefault()},{passive:false});addEventListener('keydown',e=>{let k=e.key.toLowerCase();if(['w','s','d','shift','escape',' '].includes(k))e.preventDefault();keys[k]=true;if(k==='escape'){if(mode==='play'){mode='pause';panel.style.display='flex';card.innerHTML='<h1>PAUSED</h1><p>전투 일시정지</p><button id="resume">계속하기</button> <button id="return">정비소</button> <button id="settings">설정</button>';$('resume').onclick=()=>{mode='play';panel.style.display='none'};$('return').onclick=()=>{save();shop('정비소로 귀환했습니다.')};$('settings').onclick=settingsMenu}else if(mode==='pause'){mode='play';panel.style.display='none'}}});addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);addEventListener('blur',()=>{keys={};touchBoost=false;joyX=joyY=0;resetStick()});const joy=$('joy'),stick=$('stick'),boostBtn=$('boostBtn');let joyPointer=null;function resetStick(){stick.style.transform='translate(0px,0px)'}function moveStick(e){const b=joy.getBoundingClientRect(),cx=b.left+b.width/2,cy=b.top+b.height/2,dx=e.clientX-cx,dy=e.clientY-cy,max=(b.width-64)/2,dist=Math.hypot(dx,dy)||1,k=Math.min(1,max/dist);joyX=Math.max(0,dx*k/max);joyY=dy*k/max;stick.style.transform='translate('+Math.max(0,dx*k)+'px,'+dy*k+'px)'}joy.addEventListener('pointerdown',e=>{e.preventDefault();joyPointer=e.pointerId;joy.setPointerCapture(e.pointerId);moveStick(e)});joy.addEventListener('pointermove',e=>{if(e.pointerId===joyPointer)moveStick(e)});function endJoy(e){if(e.pointerId!==joyPointer)return;joyPointer=null;joyX=joyY=0;resetStick()}joy.addEventListener('pointerup',endJoy);joy.addEventListener('pointercancel',endJoy);boostBtn.addEventListener('pointerdown',e=>{e.preventDefault();boostBtn.setPointerCapture(e.pointerId);touchBoost=true});for(const eventName of ['pointerup','pointercancel','lostpointercapture'])boostBtn.addEventListener(eventName,()=>touchBoost=false);$('pauseBtn').onclick=()=>{if(mode==='play'){mode='pause';panel.style.display='flex';card.innerHTML='<h1>PAUSED</h1><p>전투 일시정지</p><button id="resume">계속하기</button> <button id="return">정비소</button> <button id="settings">설정</button>';$('resume').onclick=()=>{mode='play';panel.style.display='none'};$('return').onclick=()=>{save();shop('정비소로 귀환했습니다.')};$('settings').onclick=settingsMenu}};mainMenu();</script></body></html>
+document.addEventListener('gesturestart',e=>e.preventDefault(),{passive:false});document.addEventListener('gesturechange',e=>e.preventDefault(),{passive:false});document.addEventListener('gestureend',e=>e.preventDefault(),{passive:false});document.addEventListener('touchmove',e=>{if(e.touches.length>1||!e.target.closest('#panel'))e.preventDefault()},{passive:false});document.addEventListener('wheel',e=>{if(!e.target.closest('#panel'))e.preventDefault();else if(e.ctrlKey)e.preventDefault()},{passive:false});document.addEventListener('dblclick',e=>{if(!e.target.closest('#panel'))e.preventDefault()},{passive:false});addEventListener('keydown',e=>{let k=e.key.toLowerCase();if(['w','s','d','shift','escape',' '].includes(k))e.preventDefault();keys[k]=true;if(k==='escape'){if(mode==='play'){mode='pause';panel.style.display='flex';card.innerHTML='<h1>PAUSED</h1><p>전투 일시정지</p><button id="resume">계속하기</button> <button id="return">정비소</button> <button id="settings">설정</button>';$('resume').onclick=()=>{mode='play';panel.style.display='none'};$('return').onclick=()=>{save();shop('정비소로 귀환했습니다.')};$('settings').onclick=settingsMenu}else if(mode==='pause'){mode='play';panel.style.display='none'}}});addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);addEventListener('blur',()=>{keys={};touchBoost=false;joyX=joyY=0;resetStick()});const joy=$('joy'),stick=$('stick'),boostBtn=$('boostBtn');
+joy.style.position='fixed';joy.style.left='0px';joy.style.top='0px';joy.style.bottom='auto';joy.style.display='none';joy.style.pointerEvents='none';
+boostBtn.style.display='none';
+let joyPointer=null,boostPointer=null,joyCenterX=0,joyCenterY=0;
+function resetStick(){stick.style.transform='translate(0px,0px)'}
+function releaseJoy(){joyPointer=null;joyX=joyY=0;resetStick();joy.style.display='none'}
+function updateFloatingStick(e){
+ const max=49,dx=e.clientX-joyCenterX,dy=e.clientY-joyCenterY,dist=Math.hypot(dx,dy)||1,k=Math.min(1,max/dist);
+ joyX=Math.max(0,dx*k/max);joyY=dy*k/max;
+ stick.style.transform='translate('+(dx*k)+'px,'+(dy*k)+'px)';
+}
+function gameplayTouchTarget(e){
+ return mode==='play'&&e.pointerType!=='mouse'&&!e.target.closest('#panel,#card,#pauseBtn,#ui,#hud,button');
+}
+document.addEventListener('pointerdown',e=>{
+ if(!gameplayTouchTarget(e))return;
+ if(e.clientX<innerWidth*.5){
+  if(joyPointer!==null)return;
+  joyPointer=e.pointerId;
+  const size=142,margin=75;
+  joyCenterX=clamp(e.clientX,margin,innerWidth*.5-12);
+  joyCenterY=clamp(e.clientY,margin,innerHeight-margin);
+  joy.style.left=(joyCenterX-size/2)+'px';joy.style.top=(joyCenterY-size/2)+'px';
+  joy.style.display='block';resetStick();updateFloatingStick(e);
+ }else{
+  if(boostPointer!==null)return;
+  boostPointer=e.pointerId;touchBoost=true;
+ }
+ e.preventDefault();
+},{capture:true,passive:false});
+document.addEventListener('pointermove',e=>{
+ if(e.pointerId===joyPointer){updateFloatingStick(e);e.preventDefault()}
+},{capture:true,passive:false});
+function endScreenPointer(e){
+ if(e.pointerId===joyPointer)releaseJoy();
+ if(e.pointerId===boostPointer){boostPointer=null;touchBoost=false}
+}
+for(const type of ['pointerup','pointercancel'])document.addEventListener(type,endScreenPointer,true);
+addEventListener('blur',()=>{releaseJoy();boostPointer=null;touchBoost=false});
+$('pauseBtn').onclick=()=>{if(mode==='play'){mode='pause';panel.style.display='flex';card.innerHTML='<h1>PAUSED</h1><p>전투 일시정지</p><button id="resume">계속하기</button> <button id="return">정비소</button> <button id="settings">설정</button>';$('resume').onclick=()=>{mode='play';panel.style.display='none'};$('return').onclick=()=>{save();shop('정비소로 귀환했습니다.')};$('settings').onclick=settingsMenu}};mainMenu();</script></body></html>
