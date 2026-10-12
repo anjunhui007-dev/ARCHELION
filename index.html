@@ -110,7 +110,7 @@ function entryMenu(){mode='menu';panel.style.display='flex';card.innerHTML='<div
 
 const INVENTORY_INFO={
  hull:{swift:['스위프트','고속 기동형 선체. 체력 100 · 보호막 70 · 속도 240 · 부스터 ×2.1. 조종 반응 +35%. 레일건 장착 불가.'],guardian:['가디언','균형형 선체. 체력 150 · 보호막 100 · 속도 185 · 부스터 ×1.9. 보호막 소진 후 선체 피해 15% 감소.'],leviathan:['리바이어던','중장갑 화력형 선체. 체력 250 · 보호막 160 · 속도 135 · 부스터 ×1.6. 레일건 개수 제한 없음. 기뢰 폭발 피해 50% 감소.']},
- sail:{streamlined:['유선형 함교','추가 무장 슬롯 없음. 공격력 +15 · 이동 속도 +12% · 체력 -20 · 보호막 -10 (현재 적용 중).'],standard:['표준 함교','측면 무장 슬롯 추가. 공격력 +5 · 보호막 +20 (현재 적용 중).'],armored:['장갑형 함교','주무장 및 측면 슬롯 추가. 이동 속도 -12% · 체력 +60 · 보호막 +40 (현재 적용 중).']},
+ sail:{streamlined:['유선형 함교','추가 무장 슬롯 없음. 공격력 +3% · 이동 속도 +12% · 체력 -20 · 보호막 -10 (현재 적용 중).'],standard:['표준 함교','측면 무장 슬롯 추가. 공격력 +1% · 보호막 +20 (현재 적용 중).'],armored:['장갑형 함교','주무장 및 측면 슬롯 추가. 이동 속도 -12% · 체력 +60 · 보호막 +40 (현재 적용 중).']},
  fin:{light:['경량 방향타','상하 가감속 +35% · 상하 최고 속도 +20% · 체력 -20 · 보호막 -10 (현재 적용 중).'],standard:['표준 방향타','균형 잡힌 조종 특성. 부스터 회복 속도 +25% (현재 적용 중).'],armored:['중장갑 방향타','상하 가감속 -20% · 상하 최고 속도 -15% · 체력 +50 · 보호막 +30 (현재 적용 중).']},
  booster:{none:['기본 부스터','별도 부스터를 장착하지 않은 기본 추진기. 흰색 플라스마. 성능 보정 없음.'],azure:['청람 플라스마','균형형 추진기. 부스터 최고 속도 +10%, 게이지 회복 +10%.'],violet:['자전 플라스마','지속형 추진기. 게이지 소모 -30%, 회복 +25%, 최고 속도 -10%.'],ember:['홍염 플라스마','폭발형 추진기. 최고 속도 +30%, 게이지 소모 +40%, 회복 -15%.']},
  weapon:{gun:['자동 기관포','빠른 연사로 지속 피해를 주는 기본 주무장.'],heavy:['중량 함포','느리지만 강력한 포탄을 발사하는 주무장.'],scatter:['산탄 발사기','근거리에서 다수의 탄환을 퍼뜨리는 주무장.'],torpedo:['어뢰 사출 게이트','높은 피해를 주는 유도 어뢰 발사 장치.'],side_laser:['레이저 포탑','적을 추적해 지속적인 광선 피해를 주는 측면 무장.'],side_railgun:['레일건','강력한 관통 광선을 발사하는 측면 무장. 스위프트 장착 불가, 가디언 최대 1문.'],side_interceptor:['요격 기관총','접근하는 적 어뢰를 확정 요격하는 방어 무장. 최대 1개 장착. +100강에서 동시 2발 요격.'],side_shield:['전자기 방어막','피격을 완전히 막는 방어 충전 3회. 15초마다 재충전. 최대 1개.'],side_emp:['EMP 발생기','접근 위협을 무력화하는 전자기 충격파. 최대 1개.']}
@@ -155,16 +155,16 @@ function renderInventoryPreviews(root){
 function inventorySpecs(category,key){
  const detection=()=>Math.round(weaponDetectionRange());
  if(category==='hull'){const v={swift:[100,70,240,120,'2.1배','+35%','4개'],guardian:[150,100,185,100,'1.9배','기본','6개'],leviathan:[250,160,135,90,'1.6배','기본','7개']}[key];return [['기본 체력',v[0]],['기본 보호막',v[1]],['기본 속도',v[2]],['부스터 용량',v[3]],['부스터 배율',v[4]],['조종 반응',v[5]],['무장 슬롯',v[6]]]}
- if(category==='sail'){const v={streamlined:['+15','+12%','-20','-10'],standard:['+5','기본','0','+20'],armored:['0','-12%','+60','+40']}[key];return [['공격력',v[0]],['이동 속도',v[1]],['체력 보정',v[2]],['보호막 보정',v[3]]]}
+ if(category==='sail'){const v={streamlined:['+3%','+12%','-20','-10'],standard:['+1%','기본','0','+20'],armored:['0','-12%','+60','+40']}[key];return [['공격력',v[0]],['이동 속도',v[1]],['체력 보정',v[2]],['보호막 보정',v[3]]]}
  if(category==='fin'){const v={light:['+35%','+20%','-20','-10','기본'],standard:['기본','기본','0','0','+25%'],armored:['-20%','-15%','+50','+30','기본']}[key];return [['상하 가속',v[0]],['상하 속도',v[1]],['체력 보정',v[2]],['보호막 보정',v[3]],['부스터 회복',v[4]]]}
  if(category==='booster'){const v=BOOSTER_BONUSES[key]||BOOSTER_BONUSES.azure;return [['부스터 최고 속도',Math.round((v.speed-1)*100)+'%'],['게이지 소모량',(v.drain===1?'기본':Math.round((v.drain-1)*100)+'%')],['게이지 회복',Math.round((v.regen-1)*100)+'%']]}
  const weapon={gun:'gun',heavy:'heavy',scatter:'scatter',torpedo:'torpedo'}[key];
- if(weapon){const v=weaponDefs[weapon];return [['공격력 계수',((weaponCoefficients[key]||0)*100)+'%'],['발사 간격',v[3]+'초'],['탄속',v[2]],['탐지 범위',detection()],['발사 형태',key==='scatter'?'산탄':key==='torpedo'?'유도 어뢰':'포탄']]}
- if(key==='side_railgun')return [['공격력 계수','220%'],['발사 간격','8초'],['탐지 범위',detection()],['특징','관통 광선']];
- if(key==='side_laser')return [['공격력 계수','6% / 타격'],['탐지 범위',detection()],['특징','지속 광선']];
- if(key==='side_interceptor')return [['재발사 간격','2초'],['최대 장착','1개'],['탐지 범위',Math.round(Math.max(195,W*.34))],['대상','적 어뢰']];
- if(key==='side_shield')return [['방어 충전','3회'],['재충전','15초'],['장착 제한','1개']];
- if(key==='side_emp')return [['대상','적 어뢰·적'],['장착 제한','1개'],['특징','전자기 충격파']];
+ if(weapon){const v=weaponDefs[weapon];return [['공격력 계수',+(partWeaponCoefficient(key)*100).toFixed(3)+'%'],['발사 간격',+(v[3]*partCooldownFactor(key)).toFixed(4)+'초'],['탄속',v[2]],['탐지 범위',detection()],['발사 형태',key==='scatter'?'산탄':key==='torpedo'?'유도 어뢰':'포탄']]}
+ if(key==='side_railgun')return [['공격력 계수',+(partWeaponCoefficient(key)*100).toFixed(3)+'%'],['발사 간격',+(8*partCooldownFactor(key)).toFixed(3)+'초'],['탐지 범위',detection()],['특징','관통 광선']];
+ if(key==='side_laser')return [['공격력 계수',+(partWeaponCoefficient(key)*100).toFixed(3)+'% / 타격'],['타격 간격',+(.1*partCooldownFactor(key)).toFixed(4)+'초'],['탐지 범위',detection()],['특징','지속 광선']];
+ if(key==='side_interceptor')return [['재발사 간격',+(2*partCooldownFactor(key)).toFixed(3)+'초'],['동시 요격',partLevel('weapon',key)>=100?'2발':'1발'],['최대 장착','1개'],['탐지 범위',Math.round(Math.max(195,W*.34))],['대상','적 어뢰']];
+ if(key==='side_shield')return [['방어 충전','3회'],['재충전',+(15*partCooldownFactor(key)).toFixed(3)+'초'],['장착 제한','1개']];
+ if(key==='side_emp')return [['충전 쿨타임',+(9*partCooldownFactor(key)).toFixed(3)+'초'],['대상','적 어뢰·적'],['장착 제한','1개'],['특징','전자기 충격파']];
  return [];
 }
 function openInventoryDetail(category,key){
@@ -176,8 +176,7 @@ function openInventoryDetail(category,key){
  const art=composite?'<canvas data-item-preview="'+category+':'+key+'" width="320" height="140"></canvas>':asset?'<img style="max-width:'+scale+'%" src="'+ASSET_ROOT+asset+'.png" alt="'+esc(info[0])+'">':'';
  const existing=document.querySelector('.inventory-detail-overlay');if(existing)existing.remove();
  const overlay=document.createElement('div');overlay.className='inventory-detail-overlay';
- const equippedCount=category==='weapon'?hangar.weapons.filter(w=>w===key).length:hangar[category]===key?1:0;
- const count=partOwned(category,key),level=partLevel(category,key),cost=partCost(category,key),eligible=PART_KEYS[category]?.includes(key);
+ const count=partOwned(category,key),level=partLevel(category,key),cost=partCost(category,key);
  overlay.innerHTML='<div class="inventory-detail" role="dialog" aria-modal="true" aria-label="'+esc(info[0])+'"><button class="inventory-detail-close" aria-label="닫기">✕ 닫기</button><div class="inventory-detail-body"><div class="inventory-detail-art">'+art+'</div><div class="inventory-detail-info"><h2>'+esc(info[0])+'</h2><p>'+esc(info[1])+'</p><h3 style="margin:12px 0 7px;font-size:14px">상세 스펙</h3><div class="inventory-specs">'+inventorySpecs(category,key).map(([name,value])=>'<div class="inventory-spec">'+esc(name)+'<strong style="display:block;color:#a9e9e5;margin-top:4px">'+esc(value)+'</strong></div>').join('')+'</div><div class="inventory-detail-bottom"><span>보유 재료 <strong>'+count+'개</strong><small style="display:block;color:#8db1be">강화 +'+level+' · 다음 강화 동일 파츠 '+cost+'개 · 보유 총합 '+partTotalLevel()+'강 (공격력 +'+Math.floor(partTotalLevel()/30)+'%)</small></span><button disabled title="재료 수급처 미구현">강화 · 재료 수급 대기</button></div></div></div>';
  document.body.appendChild(overlay);
  overlay.querySelector('.inventory-detail-close').onclick=()=>overlay.remove();
