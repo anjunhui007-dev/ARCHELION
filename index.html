@@ -43,6 +43,8 @@
 /* Inventory: prevent sticky header from covering scrolled item cards */
 .inventory-top,.inventory-tabs{position:static!important;top:auto!important;z-index:auto!important;background:transparent!important}
 .inventory-screen{scroll-padding-top:8px}
+
+.inventory-item{cursor:pointer;transition:border-color .15s,transform .15s}.inventory-item:hover,.inventory-item:focus-visible{border-color:#7bd4dc;transform:translateY(-2px);outline:none}.inventory-item .inventory-kind{margin-bottom:0}.inventory-detail-overlay{position:fixed;inset:0;background:#020c16d9;z-index:10000;display:flex;align-items:center;justify-content:center;padding:14px;box-sizing:border-box}.inventory-detail{position:relative;width:min(920px,96vw);max-height:90dvh;overflow:auto;background:linear-gradient(135deg,#123447,#081925);border:1px solid #70a9b8;border-radius:15px;box-shadow:0 16px 55px #000b;padding:22px;box-sizing:border-box;color:#e8f7fa}.inventory-detail-close{position:absolute;right:13px;top:12px;z-index:2}.inventory-detail-body{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:22px;align-items:stretch;margin-top:27px}.inventory-detail-art{min-height:220px;background:radial-gradient(ellipse,#1c4a61,#081a27 75%);border:1px solid #335b70;border-radius:12px;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:14px}.inventory-detail-art img{max-width:100%;max-height:240px;object-fit:contain;filter:drop-shadow(0 8px 14px #0009)}.inventory-detail-art canvas{width:100%;max-height:240px;object-fit:contain}.inventory-detail-info h2{margin:0 0 12px}.inventory-detail-info p{line-height:1.6;color:#b6d3de}.inventory-specs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:12px 0}.inventory-spec{border:1px solid #315466;background:#0a2331;border-radius:7px;padding:9px;font-size:12px}.inventory-detail-bottom{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:15px;flex-wrap:wrap}.inventory-detail-bottom button{padding:10px 20px}.inventory-detail-bottom button:disabled{opacity:.55;cursor:not-allowed}@media(max-width:550px){.inventory-detail{padding:12px}.inventory-detail-body{grid-template-columns:1fr;gap:10px;margin-top:35px}.inventory-detail-art{min-height:125px;max-height:165px}.inventory-detail-art img,.inventory-detail-art canvas{max-height:155px}.inventory-detail-info h2{font-size:17px}.inventory-spec{padding:6px;font-size:11px}}
 </style><style>
 #card:has(.main-screen){max-width:none;width:100vw;height:100dvh;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;overflow:hidden}
 .main-screen{position:relative;width:100%;height:100%;overflow:hidden;background:radial-gradient(ellipse at 50% 48%,#193e4b 0%,#0b2431 40%,#040f19 100%)}
@@ -95,16 +97,19 @@ function openInventory(category='hull'){
  for(const [key,name] of tabs)html+='<button data-inv-tab="'+key+'" class="'+(category===key?'active':'')+'">'+name+'</button>';
  html+='</div><div class="inventory-grid">';
  for(const [key,info] of Object.entries(INVENTORY_INFO[category])){
-  const equipped=category==='weapon'?hangar.weapons.includes(key):hangar[category]===key;
   const asset=category==='weapon'?(key==='torpedo'?'torpedo_ejection_gate':key.startsWith('side_')?key:null):category==='booster'?null:key+'_'+category;
   const composite=category==='booster'||(category==='weapon'&&['gun','heavy','scatter'].includes(key));
   const hullScale=category==='hull'?({swift:.72,guardian:.88,leviathan:1.12}[key]||1):1;
-  html+='<div class="inventory-item '+(equipped?'equipped':'')+'"><div class="inventory-art">'+(composite?'<canvas data-item-preview="'+category+':'+key+'" width="320" height="140"></canvas>':asset?'<img style="'+(category==='hull'?'max-width:'+Math.round(82*hullScale)+'%;max-height:'+Math.round(83*hullScale)+'%;':'')+'" src="'+ASSET_ROOT+asset+'.png" alt="'+escapeHtml(info[0])+'" loading="lazy" onerror="this.style.display=\'none\';this.parentNode.textContent=\'에셋 미리보기 없음\'">':'')+'</div><div class="inventory-name">'+escapeHtml(info[0])+(equipped?'<span class="inventory-equipped">● 장착 중</span>':'')+'</div><div class="inventory-kind">'+(category==='weapon'?'무장 부품':'잠수함 구성 부품')+'</div><div class="inventory-desc">'+escapeHtml(info[1])+'</div></div>';
+  html+='<div class="inventory-item" role="button" tabindex="0" data-inv-item="'+key+'"><div class="inventory-art">'+(composite?'<canvas data-item-preview="'+category+':'+key+'" width="320" height="140"></canvas>':asset?'<img style="'+(category==='hull'?'max-width:'+Math.round(82*hullScale)+'%;max-height:'+Math.round(83*hullScale)+'%;':'')+'" src="'+ASSET_ROOT+asset+'.png" alt="'+escapeHtml(info[0])+'" loading="lazy">':'')+'</div><div class="inventory-name">'+escapeHtml(info[0])+'</div><div class="inventory-kind">터치하여 상세 정보 보기</div></div>';
  }
  html+='</div></div>';card.innerHTML=html;
  $('inventoryBack').onclick=mainMenu;
  card.querySelectorAll('[data-inv-tab]').forEach(b=>b.onclick=()=>openInventory(b.dataset.invTab));
- card.querySelectorAll('[data-item-preview]').forEach(c=>{
+ card.querySelectorAll('[data-inv-item]').forEach(el=>{const show=()=>openInventoryDetail(category,el.dataset.invItem);el.onclick=show;el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();show()}}});
+ renderInventoryPreviews(card);
+}
+function renderInventoryPreviews(root){
+ root.querySelectorAll('[data-item-preview]').forEach(c=>{
  const [kind,key]=c.dataset.itemPreview.split(':'),q=c.getContext('2d');
  const paint=()=>{q.clearRect(0,0,320,140);
  if(kind==='booster'){
@@ -120,6 +125,38 @@ function openInventory(category='hull'){
  q.save();q.translate(102,70);q.shadowColor='#000a';q.shadowBlur=8;q.drawImage(barrel,-tw*.12,-th/2,tw,th);q.drawImage(base,-bw/2,-bh/2,bw,bh);q.restore();
  };paint();if(kind==='weapon'){for(const name of ({gun:['autocannon_base','autocannon_barrel'],heavy:['heavy_cannon_base','heavy_cannon_barrel'],scatter:['scattergun_base','scattergun_barrel']}[key]||[])){const im=assetImages[name];if(im&&!im.complete)im.addEventListener('load',paint,{once:true})}}
  });
+}
+function inventorySpecs(category,key){
+ const detection=()=>Math.max(280,Math.min(450,W*.48));
+ if(category==='hull'){const v={swift:[100,70,240,120,'2.1배','+35%','4개'],guardian:[150,100,185,100,'1.9배','기본','6개'],leviathan:[250,160,135,90,'1.6배','기본','7개']}[key];return [['기본 체력',v[0]],['기본 보호막',v[1]],['기본 속도',v[2]],['부스터 용량',v[3]],['부스터 배율',v[4]],['조종 반응',v[5]],['무장 슬롯',v[6]]]}
+ if(category==='sail'){const v={streamlined:['+15','+12%','-20','-10'],standard:['+5','기본','0','+20'],armored:['0','-12%','+60','+40']}[key];return [['공격력',v[0]],['이동 속도',v[1]],['체력 보정',v[2]],['보호막 보정',v[3]]]}
+ if(category==='fin'){const v={light:['+35%','+20%','-20','-10','기본'],standard:['기본','기본','0','0','+25%'],armored:['-20%','-15%','+50','+30','기본']}[key];return [['상하 가속',v[0]],['상하 속도',v[1]],['체력 보정',v[2]],['보호막 보정',v[3]],['부스터 회복',v[4]]]}
+ if(category==='booster')return [['효과','외형 변경'],['성능 보정','없음']];
+ const weapon={gun:'gun',heavy:'heavy',scatter:'scatter',torpedo:'torpedo'}[key];
+ if(weapon){const v=weaponDefs[weapon];return [['공격력 계수',((weaponCoefficients[key]||0)*100)+'%'],['발사 간격',v[3]+'초'],['탄속',v[2]],['탐지 범위',detection()],['발사 형태',key==='scatter'?'산탄':key==='torpedo'?'유도 어뢰':'포탄']]}
+ if(key==='side_railgun')return [['공격력 계수','220%'],['발사 간격','5초'],['탐지 범위',detection()],['특징','관통 광선']];
+ if(key==='side_laser')return [['공격력 계수','6% / 타격'],['탐지 범위',detection()],['특징','지속 광선']];
+ if(key==='side_interceptor')return [['재발사 간격','2초'],['탐지 범위',Math.max(195,W*.34)],['대상','적 어뢰']];
+ if(key==='side_shield')return [['방어 충전','3회'],['재충전','15초'],['장착 제한','1개']];
+ if(key==='side_emp')return [['대상','적 어뢰·적'],['장착 제한','1개'],['특징','전자기 충격파']];
+ return [];
+}
+function openInventoryDetail(category,key){
+ const info=INVENTORY_INFO[category]?.[key];if(!info)return;
+ const esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
+ const asset=category==='weapon'?(key==='torpedo'?'torpedo_ejection_gate':key.startsWith('side_')?key:null):category==='booster'?null:key+'_'+category;
+ const composite=category==='booster'||(category==='weapon'&&['gun','heavy','scatter'].includes(key));
+ const scale=category==='hull'?({swift:72,guardian:88,leviathan:100}[key]||100):100;
+ const art=composite?'<canvas data-item-preview="'+category+':'+key+'" width="320" height="140"></canvas>':asset?'<img style="max-width:'+scale+'%" src="'+ASSET_ROOT+asset+'.png" alt="'+esc(info[0])+'">':'';
+ const existing=document.querySelector('.inventory-detail-overlay');if(existing)existing.remove();
+ const overlay=document.createElement('div');overlay.className='inventory-detail-overlay';
+ const equippedCount=category==='weapon'?hangar.weapons.filter(w=>w===key).length:hangar[category]===key?1:0;
+ const count=category==='weapon'?Math.max(1,equippedCount):1;
+ overlay.innerHTML='<div class="inventory-detail" role="dialog" aria-modal="true" aria-label="'+esc(info[0])+'"><button class="inventory-detail-close" aria-label="닫기">✕ 닫기</button><div class="inventory-detail-body"><div class="inventory-detail-art">'+art+'</div><div class="inventory-detail-info"><h2>'+esc(info[0])+'</h2><p>'+esc(info[1])+'</p><h3 style="margin:12px 0 7px;font-size:14px">상세 스펙</h3><div class="inventory-specs">'+inventorySpecs(category,key).map(([name,value])=>'<div class="inventory-spec">'+esc(name)+'<strong style="display:block;color:#a9e9e5;margin-top:4px">'+esc(value)+'</strong></div>').join('')+'</div><div class="inventory-detail-bottom"><span>기본 이용 가능 수량 <strong>'+count+'개</strong><small style="display:block;color:#8db1be">별도 보유 수량 시스템은 미구현</small></span><button disabled title="파츠별 강화 시스템 준비 중">강화 · 준비 중</button></div></div></div>';
+ document.body.appendChild(overlay);
+ overlay.querySelector('.inventory-detail-close').onclick=()=>overlay.remove();
+ overlay.onclick=e=>{if(e.target===overlay)overlay.remove()};
+ renderInventoryPreviews(overlay);
 }
 function mainMenu(){mode='menu';panel.style.display='flex';card.innerHTML='<div class="main-screen"><div class="main-title"><h1>ABYSS</h1><span>STEEL DEPTHS</span></div><div class="main-sonar"><div class="sonar-sweep"></div><div class="sonar-cross"></div></div><canvas id="menuShip" width="900" height="320"></canvas><div class="main-actions"><button id="startOperation">작전 시작</button><button id="mainHangar">잠수함 격납고</button><button id="mainShop">정비소</button><button id="mainInventory">파츠 도감</button><button id="mainSettings">설정</button></div><div class="main-foot">TACTICAL SUBMARINE COMBAT SYSTEM</div></div>';$('startOperation').onclick=chapterSelect;$('mainHangar').onclick=()=>{if(activeSlot<0){const first=slots.findIndex(Boolean);if(first>=0){activeSlot=first;const v=slots[first];stage=v.stage||1;money=v.money??1200;lv=normalizeUpgrades(v.lv,v.upgradeVersion)}}hangarSelectedSlot=null;openHangar()};$('mainShop').onclick=()=>shop('정비소 · 기체 업그레이드');$('mainInventory').onclick=()=>openInventory();$('mainSettings').onclick=()=>{mode='menu';card.innerHTML='<h1>설정</h1><p>게임 환경 및 저장 데이터는 브라우저에 보관됩니다.</p><button id="changeSave">저장 슬롯 변경</button><br><br><button class="wide-back" id="settingBack">← 메인 메뉴</button>';$('changeSave').onclick=entryMenu;$('settingBack').onclick=mainMenu};requestAnimationFrame(drawMenuShip)}
 function drawMenuShip(){const c=$('menuShip');if(!c||mode!=='menu')return;const q=c.getContext('2d');q.clearRect(0,0,c.width,c.height);q.save();q.translate(455,163+Math.sin(performance.now()*.0014)*3);const fit=1.78;q.scale(fit,fit);drawShipExhaust(q,true,performance.now()/1000);paintParts(q,0,0,1,true);q.restore();requestAnimationFrame(drawMenuShip)}
