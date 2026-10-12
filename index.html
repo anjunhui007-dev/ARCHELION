@@ -202,8 +202,13 @@ function drawHangarPreview(){
   q.translate(w/2,h/2);q.scale(zoom,zoom);
   q.translate(-w/2-fit*target.x,-h/2-fit*target.y);
  }
- if(!target){q.save();q.translate(w/2,h/2);drawShipExhaust(q,hangarBoosterPreview,performance.now()/1000,true);q.restore()}
  paintParts(q,w/2,h/2,previewScale);
+ if(!target){
+  // Show the equipped booster at normal thrust, behind the stern, using the exact hangar ship scale.
+  q.save();q.translate(w/2,h/2);q.scale(fit,fit);
+  drawPlasma(q,boosterSternX()-8,0,.72,false,0);
+  q.restore();
+ }
  if(target){
   // Calculate the equipped sprite's footprint geometrically. Do not read
   // cross-origin image pixels: getImageData throws SecurityError on iOS Safari.
@@ -261,7 +266,7 @@ function openHangar(){
   for(const [id,label,opts] of [['hull','선체',hullNames],['sail','함교',sailNames],['fin','방향타',finNames],['booster','부스터',Object.keys(BOOSTER_STYLES)]]){
    h+='<label>'+label+'<select data-part="'+id+'">'+opts.map(v=>'<option value="'+v+'" '+((hangar[id]||'azure')===v?'selected':'')+'>'+(id==='booster'?BOOSTER_STYLES[v].name:v)+'</option>').join('')+'</select></label>';
   }
-  h+='</div><button class="hangar-secondary" id="boosterTest">'+(hangarBoosterPreview?'분사 미리보기 해제':'부스터 강화 분사 미리보기')+'</button>';
+  h+='</div>';
   h+='<div class="hangar-subtitle">무장 슬롯 · '+slots.length+'</div><div class="hangar-slots">';
   slots.forEach((slot,i)=>{
    const num=slots.slice(0,i+1).filter(v=>v.owner===slot.owner&&v.section===slot.section).length;
@@ -281,7 +286,7 @@ function openHangar(){
  card.innerHTML=h;drawHangarPreview();
  for(const im of Object.values(assetImages)){if(!im.complete)im.addEventListener('load',drawHangarPreview,{once:true})}
  card.querySelectorAll('[data-booster]').forEach(e=>e.onclick=()=>{hangar.booster=e.dataset.booster;saveHangar();openHangar()});
- if($('boosterTest'))$('boosterTest').onclick=()=>{hangarBoosterPreview=!hangarBoosterPreview;openHangar()};
+
  card.querySelectorAll('[data-part]').forEach(e=>e.onchange=()=>{hangar[e.dataset.part]=e.value;hangarSelectedSlot=null;saveHangar();openHangar()});
  card.querySelectorAll('[data-slot]').forEach(e=>e.onclick=()=>{hangarSelectedSlot=+e.dataset.slot;openHangar()});
  card.querySelectorAll('[data-weapon-choice]').forEach(e=>e.onclick=()=>{hangar.weapons[selected]=e.dataset.weaponChoice;saveHangar();openHangar()});
