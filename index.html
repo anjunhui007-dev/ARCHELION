@@ -205,11 +205,33 @@ function drawHangarPreview(){
  if(!target){q.save();q.translate(w/2,h/2);drawShipExhaust(q,hangarBoosterPreview,performance.now()/1000,true);q.restore()}
  paintParts(q,w/2,h/2,previewScale);
  if(target){
-  const im=assetImages[target.asset],pw=(im?.naturalWidth||100)*target.scale*fit,ph=(im?.naturalHeight||100)*target.scale*fit;
-  q.save();q.translate(w/2+fit*target.x,h/2+fit*target.y);q.rotate(target.rotation*Math.PI/180);
-  // Draw selection in the same coordinate space as the rendered mount.
-  q.strokeStyle='#e8f9ff';q.lineWidth=1.4/1.65;q.setLineDash([4/1.65,3/1.65]);q.shadowColor='#ffffff';q.shadowBlur=3/1.65;
-  q.strokeRect(-pw/2-3,-ph/2-3,pw+6,ph+6);q.restore();
+  // Measure the actual equipped weapon sprite, not the underlying empty mount.
+  const weapon=hangar.weapons[hangarSelectedSlot]||(target.asset==='side_mount'?'none':'gun');
+  const mask=document.createElement('canvas');mask.width=1400;mask.height=1100;
+  const mq=mask.getContext('2d',{willReadFrequently:true});
+  mq.translate(700,550);
+  if(target.asset==='side_mount'&&sidePivots[weapon])drawSideWeapon(mq,weapon,target);
+  else if(weaponSprites[weapon])drawMountedWeapon(mq,weapon,target);
+  else{
+   const im=assetImages[target.asset];
+   if(im?.naturalWidth){
+    mq.translate(target.x,target.y);mq.rotate(target.rotation*Math.PI/180);
+    if(target.flip)mq.scale(1,-1);
+    mq.drawImage(im,-im.naturalWidth*target.scale/2,-im.naturalHeight*target.scale/2,im.naturalWidth*target.scale,im.naturalHeight*target.scale);
+   }
+  }
+  const pixels=mq.getImageData(0,0,mask.width,mask.height).data;
+  let left=mask.width,top=mask.height,right=-1,bottom=-1;
+  for(let y=0;y<mask.height;y+=2)for(let x=0;x<mask.width;x+=2){
+   if(pixels[(y*mask.width+x)*4+3]>30){left=Math.min(left,x);top=Math.min(top,y);right=Math.max(right,x);bottom=Math.max(bottom,y)}
+  }
+  if(right>=left){
+   const pad=5,px=w/2+(left-700)*fit,py=h/2+(top-550)*fit;
+   const pw=(right-left+2)*fit,ph=(bottom-top+2)*fit;
+   q.save();q.strokeStyle='#e8f9ff';q.lineWidth=1.1/1.65;q.setLineDash([4/1.65,3/1.65]);
+   q.shadowColor='#ffffff';q.shadowBlur=2/1.65;
+   q.strokeRect(px-pad,py-pad,pw+pad*2,ph+pad*2);q.restore();
+  }
  }
  q.restore();
 }
