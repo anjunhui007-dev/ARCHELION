@@ -153,7 +153,7 @@ function renderInventoryPreviews(root){
  });
 }
 function inventorySpecs(category,key){
- const detection=()=>Math.max(280,Math.min(450,W*.48));
+ const detection=()=>Math.round(weaponDetectionRange());
  if(category==='hull'){const v={swift:[100,70,240,120,'2.1배','+35%','4개'],guardian:[150,100,185,100,'1.9배','기본','6개'],leviathan:[250,160,135,90,'1.6배','기본','7개']}[key];return [['기본 체력',v[0]],['기본 보호막',v[1]],['기본 속도',v[2]],['부스터 용량',v[3]],['부스터 배율',v[4]],['조종 반응',v[5]],['무장 슬롯',v[6]]]}
  if(category==='sail'){const v={streamlined:['+15','+12%','-20','-10'],standard:['+5','기본','0','+20'],armored:['0','-12%','+60','+40']}[key];return [['공격력',v[0]],['이동 속도',v[1]],['체력 보정',v[2]],['보호막 보정',v[3]]]}
  if(category==='fin'){const v={light:['+35%','+20%','-20','-10','기본'],standard:['기본','기본','0','0','+25%'],armored:['-20%','-15%','+50','+30','기본']}[key];return [['상하 가속',v[0]],['상하 속도',v[1]],['체력 보정',v[2]],['보호막 보정',v[3]],['부스터 회복',v[4]]]}
@@ -162,7 +162,7 @@ function inventorySpecs(category,key){
  if(weapon){const v=weaponDefs[weapon];return [['공격력 계수',((weaponCoefficients[key]||0)*100)+'%'],['발사 간격',v[3]+'초'],['탄속',v[2]],['탐지 범위',detection()],['발사 형태',key==='scatter'?'산탄':key==='torpedo'?'유도 어뢰':'포탄']]}
  if(key==='side_railgun')return [['공격력 계수','220%'],['발사 간격','8초'],['탐지 범위',detection()],['특징','관통 광선']];
  if(key==='side_laser')return [['공격력 계수','6% / 타격'],['탐지 범위',detection()],['특징','지속 광선']];
- if(key==='side_interceptor')return [['재발사 간격','2초'],['탐지 범위',Math.max(195,W*.34)],['대상','적 어뢰']];
+ if(key==='side_interceptor')return [['재발사 간격','2초'],['탐지 범위',Math.round(Math.max(195,W*.34))],['대상','적 어뢰']];
  if(key==='side_shield')return [['방어 충전','3회'],['재충전','15초'],['장착 제한','1개']];
  if(key==='side_emp')return [['대상','적 어뢰·적'],['장착 제한','1개'],['특징','전자기 충격파']];
  return [];
