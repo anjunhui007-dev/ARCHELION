@@ -32,9 +32,9 @@
 const canvas=document.getElementById('game'),ctx=canvas.getContext('2d'),panel=document.getElementById('panel'),card=document.getElementById('card');
 let W=innerWidth,H=innerHeight,dpr=1;function resize(){dpr=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;canvas.width=W*dpr;canvas.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0)}addEventListener('resize',resize);resize();
 const $=id=>document.getElementById(id),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),rand=(a,b)=>a+Math.random()*(b-a);
+const normalizeUpgrades=(old,version)=>version===2?Object.assign({hp:0,attack:0,shield:0,boost:0},old||{}):{hp:0,attack:0,shield:0,boost:0};
 const saved=(()=>{try{return JSON.parse(localStorage.getItem('abyss-steel-depths-v1'))||{}}catch{return {}}})();
 let stage=saved.stage||1,money=saved.money??1200,lv=normalizeUpgrades(saved.lv,saved.upgradeVersion);
-const normalizeUpgrades=(old,version)=>version===2?Object.assign({hp:0,attack:0,shield:0,boost:0},old||{}):{hp:0,attack:0,shield:0,boost:0};
 const SLOT_KEY='abyss-steel-depths-slots-v1';let slots=(()=>{try{const v=JSON.parse(localStorage.getItem(SLOT_KEY));if(Array.isArray(v))return [v[0]||null,v[1]||null,v[2]||null]}catch{}return [saved.stage||saved.money!==undefined?{stage:saved.stage||1,money:saved.money??1200,lv:saved.lv||{},updated:Date.now()}:null,null,null]})();let activeSlot=-1;
 const persistSlots=()=>{try{localStorage.setItem(SLOT_KEY,JSON.stringify(slots))}catch{}};
 const save=()=>{if(activeSlot<0)return;const old=slots[activeSlot];slots[activeSlot]={stage,money,lv:{...lv},upgradeVersion:2,unlocked:Math.max(stage,old?.unlocked||old?.stage||1),updated:Date.now()};persistSlots()};
