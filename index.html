@@ -216,7 +216,7 @@ function drawHangarPreview(){
    const pts=[[x,y],[x+width,y],[x+width,y+height],[x,y+height]];
    for(const [px,py] of pts)rectangles.push([target.x+px*cs-py*sn,target.y+px*sn+py*cs]);
   }
-  if(target.asset==='side_mount'&&sidePivots[weapon]){
+  if(target.asset==='side_mount'&&sidePivots[weapon]&&weapon!=='side_shield'&&weapon!=='side_emp'){
    const im=assetImages[weapon],pivot=sidePivots[weapon];
    if(im?.naturalWidth){
     const k=mountW*.96/350;
