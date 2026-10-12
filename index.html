@@ -134,7 +134,7 @@ function inventorySpecs(category,key){
  if(category==='booster')return [['효과','외형 변경'],['성능 보정','없음']];
  const weapon={gun:'gun',heavy:'heavy',scatter:'scatter',torpedo:'torpedo'}[key];
  if(weapon){const v=weaponDefs[weapon];return [['공격력 계수',((weaponCoefficients[key]||0)*100)+'%'],['발사 간격',v[3]+'초'],['탄속',v[2]],['탐지 범위',detection()],['발사 형태',key==='scatter'?'산탄':key==='torpedo'?'유도 어뢰':'포탄']]}
- if(key==='side_railgun')return [['공격력 계수','220%'],['발사 간격','5초'],['탐지 범위',detection()],['특징','관통 광선']];
+ if(key==='side_railgun')return [['공격력 계수','220%'],['발사 간격','8초'],['탐지 범위',detection()],['특징','관통 광선']];
  if(key==='side_laser')return [['공격력 계수','6% / 타격'],['탐지 범위',detection()],['특징','지속 광선']];
  if(key==='side_interceptor')return [['재발사 간격','2초'],['탐지 범위',Math.max(195,W*.34)],['대상','적 어뢰']];
  if(key==='side_shield')return [['방어 충전','3회'],['재충전','15초'],['장착 제한','1개']];
@@ -454,8 +454,8 @@ const upgradeDefs=[['hp','체력 강화','최대 체력 +25',700],['attack','공
 const upgradeCost=(base,level)=>Math.round(base*Math.pow(1.32,level)/10)*10;
 function shop(message='출항 준비'){mode='shop';panel.style.display='flex';let html='<h1>ABYSS</h1><p>'+message+'</p><div class="money">₡ '+money.toLocaleString()+'</div><div class="shop">';for(const [id,name,desc,base] of upgradeDefs){let cost=upgradeCost(base,lv[id]);html+='<button data-up="'+id+'" '+(money<cost?'disabled':'')+'>'+name+' <span style="color:#94d9cb">Lv.'+lv[id]+'</span><br>'+desc+'<br>₡ '+cost.toLocaleString()+'</button>'}html+='</div><p>현재 스탯 · 체력 '+maxHp()+' HP · 공격력 '+baseAttack()+' · 보호막 체력 '+maxShieldHp()+' · 방어막 무장 3회 (15초 충전) · 부스터 '+maxBoost()+'</p><button id="mainMenuBtn">메인 메뉴</button><p style="font-size:12px">게임 진행은 이 브라우저에 자동 저장됩니다.</p>';card.innerHTML=html;card.querySelectorAll('[data-up]').forEach(b=>b.onclick=()=>{const id=b.dataset.up,def=upgradeDefs.find(x=>x[0]===id),cost=upgradeCost(def[3],lv[id]);if(money>=cost){money-=cost;lv[id]++;save();shop(message)}});$('mainMenuBtn').onclick=()=>{save();mainMenu()}}
 function flash(s){$('notice').textContent='!';noticeTimer=1.25}
-function spawnEnemy(kind='uboat'){const hunter=kind==='hunter',hp=(hunter?130:28)+stage*(hunter?23:5);enemies.push({kind,x:W+rand(70,190),y:rand(65,H-65),hp,max:hp,speed:hunter?46:93,vy:0,approachY:rand(-115,115),steerDelay:rand(.1,.65),fire:rand(1.2,2.8),dir:-1,r:hunter?38:19,seed:rand(0,10),angle:0,boss:false,gunner:hunter,telegraph:0,burstLeft:0,burstGap:0,passed:false})}
-function spawnBoss(){phase='boss';bossSpawned=true;const hp=440+stage*190;enemies.push({x:W+145,y:H*.5,hp,max:hp,speed:35+stage*2,fire:2,dir:-1,r:78,seed:0,angle:0,boss:true,kind:'dreadnought',telegraph:1.8,gunCooldown:1.1,burstLeft:0,burstGap:0,followV:0,desiredGap:Math.max(145,Math.min(W*.48,weaponRangeFor('gun')*.72))});flash('⚠ 보스 접근!')}
+function spawnEnemy(kind='uboat'){const hunter=kind==='hunter',hp=(hunter?245:34)+stage*(hunter?26:7);enemies.push({kind,x:W+rand(70,190),y:rand(65,H-65),hp,max:hp,speed:hunter?46:93,vy:0,approachY:rand(-115,115),steerDelay:rand(.1,.65),fire:rand(1.2,2.8),dir:-1,r:hunter?38:19,seed:rand(0,10),angle:0,boss:false,gunner:hunter,telegraph:0,burstLeft:0,burstGap:0,passed:false})}
+function spawnBoss(){phase='boss';bossSpawned=true;const hp=500+stage*210;enemies.push({x:W+145,y:H*.5,hp,max:hp,speed:35+stage*2,fire:2,dir:-1,r:78,seed:0,angle:0,boss:true,kind:'dreadnought',telegraph:1.8,gunCooldown:1.1,burstLeft:0,burstGap:0,followV:0,desiredGap:Math.max(145,Math.min(W*.48,weaponRangeFor('gun')*.72))});flash('⚠ 보스 접근!')}
 function launchTorpedo(x,y,speed=95,turn=1.1,boss=false){torps.push({x,y,vx:-speed,vy:0,speed,turn,life:12,r:boss?10:8,boss,passed:false,eject:boss?.3:0})}
 function spawnTorpedoRaid(){const center=clamp(player.y+rand(-110,110),70,H-70),count=Math.random()<.45?3:2;for(let j=0;j<count;j++){const y=clamp(center+(j-(count-1)/2)*65,40,H-40);launchTorpedo(W+25+j*32,y,310+stage*7,1.7)}flash('⚠ 외부 어뢰 접근!');raidTimer=rand(8,14)}
 function spawnMine(){const y=rand(Math.max(110,H*.65),Math.max(125,H-105));mines.push({x:W+48,y,anchorY:H-48,r:18,seed:rand(0,6.28),hit:false});mineTimer=rand(7,13)}
@@ -556,7 +556,7 @@ const ix=clamp((keys.d?1:0)+Math.max(0,joyX),0,1),iy=clamp((keys.s?1:0)-(keys.w?
    if(slot.aim>=.3){slot.laserTarget=t;slot.laserStart=[mx,my];slot.laserTime=.08;slot.tick=(slot.tick||0)+dt;
     while(slot.tick>=.1){slot.tick-=.1;t.hp-=scaledDamage('side_laser');burst(t.x,t.y,1,'#7ceaff')}}
   }else if(slot.weapon==='side_railgun'&&slot.cool<=0){
-   slot.cool=5;slot.railGlow=.24;sideEffects.push({type:'rail',x:mx,y:my,angle:slot.angle,age:0,duration:.28});
+   slot.cool=8;slot.railGlow=.24;sideEffects.push({type:'rail',x:mx,y:my,angle:slot.angle,age:0,duration:.28});
    for(const e of enemies){const dx=e.x-mx,dy=e.y-my,along=dx*Math.cos(slot.angle)+dy*Math.sin(slot.angle),across=Math.abs(-dx*Math.sin(slot.angle)+dy*Math.cos(slot.angle));if(along>0&&along<weaponDetectionRange()&&across<e.r+6){e.hp-=scaledDamage('side_railgun');burst(e.x,e.y,12,'#9ceaff')}}
   }
  }
