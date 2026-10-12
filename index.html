@@ -345,14 +345,14 @@ function fireGun(slot,target){
  if(slot.weapon==='torpedo'){const a=Math.atan2(target.y-player.y-slot.y,target.x-player.x-slot.x);bullets.push({x:player.x+slot.x,y:player.y+slot.y,vx:Math.cos(a)*390,vy:Math.sin(a)*390,speed:390,turn:5.2,homing:true,target,life:8,damage:90+lv.gun*9,r:6,color:boosterConfig().mid});return}
  const weapon=weaponDefs[slot.weapon];if(!weapon)return;
  const muzzles=weaponMuzzles(slot);if(!muzzles)return;
- const a=slot.angle,speed=weapon[2]+lv.gun*35;
+ const a=slot.angle,speed=weapon[2]+lv.gun*35+Math.max(0,player.vx);
  const offsets=slot.weapon==='scatter'?[-.31,-.21,-.105,0,.105,.21,.31]:[0];
  offsets.forEach((off,j)=>{
   const muzzle=muzzles[slot.weapon==='scatter'?(j<2?0:j<5?1:2):0];
   const aa=a+off,forward=4;
   bullets.push({x:muzzle.x+Math.cos(a)*forward,y:muzzle.y+Math.sin(a)*forward,
    vx:Math.cos(aa)*speed,vy:Math.sin(aa)*speed,
-   life:(weaponRangeFor(slot.weapon)+lv.radar*12)/speed,
+   life:Math.max(4,(weaponRangeFor(slot.weapon)+lv.radar*12+W)/Math.max(1,speed-player.vx)),
    damage:weapon[1]+lv.gun*(slot.weapon==='scatter'?2:7),
    r:slot.weapon==='heavy'?7:3.5,color:weapon[4],
    explosive:slot.weapon==='heavy',range:slot.weapon==='heavy'?55:0});
@@ -394,7 +394,7 @@ const ix=clamp((keys.d?1:0)+Math.max(0,joyX),0,1),iy=clamp((keys.s?1:0)-(keys.w?
   if(slot.weapon==='side_emp'){
    continue;
   }
-  const targets=slot.weapon==='side_interceptor'?torps.filter(t=>t.life>0&&!t.disabled&&Math.hypot(t.x-sx,t.y-sy)<Math.max(195,W*.34)):enemies.filter(e=>Math.hypot(e.x-sx,e.y-sy)<(slot.weapon==='side_railgun'?Math.max(360,W*.62):Math.max(240,W*.43)));
+  const targets=slot.weapon==='side_interceptor'?torps.filter(t=>t.life>0&&!t.disabled&&Math.hypot(t.x-sx,t.y-sy)<Math.max(195,W*.34)):enemies.filter(e=>Math.hypot(e.x-sx,e.y-sy)<Math.max(650,W*.9));
   targets.sort((a,b)=>Math.hypot(a.x-sx,a.y-sy)-Math.hypot(b.x-sx,b.y-sy));
   const t=targets[0],desired=t?Math.atan2(t.y-sy,t.x-sx):player.angle;
   const diff=Math.atan2(Math.sin(desired-slot.angle),Math.cos(desired-slot.angle));slot.angle+=clamp(diff,-dt*4,-0+dt*4);
@@ -410,7 +410,7 @@ const ix=clamp((keys.d?1:0)+Math.max(0,joyX),0,1),iy=clamp((keys.s?1:0)-(keys.w?
     while(slot.tick>=.1){slot.tick-=.1;t.hp-=6;burst(t.x,t.y,1,'#7ceaff')}}
   }else if(slot.weapon==='side_railgun'&&slot.cool<=0){
    slot.cool=3;slot.railGlow=.24;sideEffects.push({type:'rail',x:mx,y:my,angle:slot.angle,age:0,duration:.28});
-   for(const e of enemies){const dx=e.x-mx,dy=e.y-my,along=dx*Math.cos(slot.angle)+dy*Math.sin(slot.angle),across=Math.abs(-dx*Math.sin(slot.angle)+dy*Math.cos(slot.angle));if(along>0&&along<Math.max(360,W*.62)&&across<e.r+6){e.hp-=180;burst(e.x,e.y,12,'#9ceaff')}}
+   for(const e of enemies){const dx=e.x-mx,dy=e.y-my,along=dx*Math.cos(slot.angle)+dy*Math.sin(slot.angle),across=Math.abs(-dx*Math.sin(slot.angle)+dy*Math.cos(slot.angle));if(along>0&&along<Math.max(650,W*.9)&&across<e.r+6){e.hp-=180;burst(e.x,e.y,12,'#9ceaff')}}
   }
  }
  for(const slot of player.slots){if(slot.railGlow>0)slot.railGlow=Math.max(0,slot.railGlow-dt);if(slot.weapon==='side_laser'){slot.laserTime=Math.max(0,(slot.laserTime||0)-dt);if(!slot.laserTime){slot.laserTarget=null}}}
