@@ -397,7 +397,7 @@ function drawTiledBackground(name,speed,alpha=1){
  if(!(w>0))return false;
  const shift=((scrollX*speed)%w+w)%w;
  ctx.save();ctx.globalAlpha=alpha;
- for(let x=-shift;x<W;x+=w)ctx.drawImage(im,x,name==='distant_terrain'?H-h*.62:0,w,h);
+ for(let x=-shift;x<W;x+=w)ctx.drawImage(im,x,name==='distant_terrain'?H-h*.82:0,w,h);
  ctx.restore();return true;
 }
 function drawBackgroundAssets(){
@@ -418,7 +418,7 @@ function drawBackgroundAssets(){
   const height=H*(.14+.12*random(i+29));
   const width=height*im.naturalWidth/im.naturalHeight;
   const x=i*gap-offset+(random(i+77)-.5)*gap*.30;
-  ctx.save();ctx.globalAlpha=1;ctx.drawImage(im,x,H-height*.72,width,height);ctx.restore();
+  ctx.save();ctx.globalAlpha=1;ctx.drawImage(im,x,H-height*.93,width,height);ctx.restore();
  }
  return hasBase;
 }
