@@ -205,33 +205,47 @@ function drawHangarPreview(){
  if(!target){q.save();q.translate(w/2,h/2);drawShipExhaust(q,hangarBoosterPreview,performance.now()/1000,true);q.restore()}
  paintParts(q,w/2,h/2,previewScale);
  if(target){
-  // Measure the actual equipped weapon sprite, not the underlying empty mount.
+  // Calculate the equipped sprite's footprint geometrically. Do not read
+  // cross-origin image pixels: getImageData throws SecurityError on iOS Safari.
   const weapon=hangar.weapons[hangarSelectedSlot]||(target.asset==='side_mount'?'none':'gun');
-  const mask=document.createElement('canvas');mask.width=1400;mask.height=1100;
-  const mq=mask.getContext('2d',{willReadFrequently:true});
-  mq.translate(700,550);
-  if(target.asset==='side_mount'&&sidePivots[weapon])drawSideWeapon(mq,weapon,target);
-  else if(weaponSprites[weapon])drawMountedWeapon(mq,weapon,target);
-  else{
-   const im=assetImages[target.asset];
+  const mount=assetImages[target.asset],mountW=(mount?.naturalWidth||100)*target.scale;
+  const mountH=(mount?.naturalHeight||100)*target.scale;
+  const rectangles=[];
+  function addRect(x,y,width,height,angle=0){
+   const cs=Math.cos(angle),sn=Math.sin(angle);
+   const pts=[[x,y],[x+width,y],[x+width,y+height],[x,y+height]];
+   for(const [px,py] of pts)rectangles.push([target.x+px*cs-py*sn,target.y+px*sn+py*cs]);
+  }
+  if(target.asset==='side_mount'&&sidePivots[weapon]){
+   const im=assetImages[weapon],pivot=sidePivots[weapon];
    if(im?.naturalWidth){
-    mq.translate(target.x,target.y);mq.rotate(target.rotation*Math.PI/180);
-    if(target.flip)mq.scale(1,-1);
-    mq.drawImage(im,-im.naturalWidth*target.scale/2,-im.naturalHeight*target.scale/2,im.naturalWidth*target.scale,im.naturalHeight*target.scale);
+    const k=mountW*.96/350;
+    addRect(-pivot[0]*k,-pivot[1]*k,im.naturalWidth*k,im.naturalHeight*k);
+   }
+  }else if(weaponSprites[weapon]){
+   const prefix=weaponSprites[weapon],base=assetImages[prefix+'_base'],barrel=assetImages[prefix+'_barrel'];
+   if(base?.naturalWidth&&barrel?.naturalWidth){
+    const k=mountW/base.naturalWidth*.96,baseBottom=base.naturalHeight*.94;
+    const y0=-mountH*.5+1;
+    addRect(-base.naturalWidth*.52*k,y0-baseBottom*k,base.naturalWidth*k,base.naturalHeight*k);
+    const barrelY=y0+(base.naturalHeight*.73-baseBottom)*k;
+    addRect(-barrel.naturalWidth*.16*k,barrelY-barrel.naturalHeight*.5*k,barrel.naturalWidth*k,barrel.naturalHeight*k);
    }
   }
-  const pixels=mq.getImageData(0,0,mask.width,mask.height).data;
-  let left=mask.width,top=mask.height,right=-1,bottom=-1;
-  for(let y=0;y<mask.height;y+=2)for(let x=0;x<mask.width;x+=2){
-   if(pixels[(y*mask.width+x)*4+3]>30){left=Math.min(left,x);top=Math.min(top,y);right=Math.max(right,x);bottom=Math.max(bottom,y)}
-  }
-  if(right>=left){
-   const pad=5,px=w/2+(left-700)*fit,py=h/2+(top-550)*fit;
-   const pw=(right-left+2)*fit,ph=(bottom-top+2)*fit;
-   q.save();q.strokeStyle='#e8f9ff';q.lineWidth=1.1/1.65;q.setLineDash([4/1.65,3/1.65]);
-   q.shadowColor='#ffffff';q.shadowBlur=2/1.65;
-   q.strokeRect(px-pad,py-pad,pw+pad*2,ph+pad*2);q.restore();
-  }
+  if(!rectangles.length)addRect(-mountW/2,-mountH/2,mountW,mountH);
+  const angle=target.rotation*Math.PI/180;
+  const cs=Math.cos(angle),sn=Math.sin(angle);
+  const points=rectangles.map(([x,y])=>{
+   const dx=x-target.x,dy=y-target.y;
+   return [target.x+dx*cs-dy*sn,target.y+dx*sn+dy*cs];
+  });
+  const left=Math.min(...points.map(p=>p[0])),right=Math.max(...points.map(p=>p[0]));
+  const top=Math.min(...points.map(p=>p[1])),bottom=Math.max(...points.map(p=>p[1]));
+  const pad=4;
+  q.save();q.strokeStyle='#e8f9ff';q.lineWidth=1.1/1.65;
+  q.setLineDash([4/1.65,3/1.65]);q.shadowColor='#ffffff';q.shadowBlur=2/1.65;
+  q.strokeRect(w/2+left*fit-pad,h/2+top*fit-pad,(right-left)*fit+pad*2,(bottom-top)*fit+pad*2);
+  q.restore();
  }
  q.restore();
 }
