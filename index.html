@@ -111,8 +111,8 @@ function openInventory(category='hull'){
  }
  const names={gun:['autocannon_base','autocannon_barrel'],heavy:['heavy_cannon_base','heavy_cannon_barrel'],scatter:['scattergun_base','scattergun_barrel']}[key];if(!names)return;
  const base=assetImages[names[0]],barrel=assetImages[names[1]];if(!base?.naturalWidth||!barrel?.naturalWidth)return;
- const bw=key==='heavy'?105:95,bh=bw*base.naturalHeight/base.naturalWidth,tw=key==='heavy'?147:135,th=tw*barrel.naturalHeight/barrel.naturalWidth;
- q.save();q.translate(107,70);q.shadowColor='#000a';q.shadowBlur=8;q.drawImage(base,-bw/2,-bh/2,bw,bh);q.drawImage(barrel,-tw*.12,-th/2,tw,th);q.restore();
+ const bw=key==='heavy'?105:95,bh=bw*base.naturalHeight/base.naturalWidth,tw=key==='heavy'?147:key==='scatter'?112:135,th=tw*barrel.naturalHeight/barrel.naturalWidth;
+ q.save();q.translate(107,70);q.shadowColor='#000a';q.shadowBlur=8;q.drawImage(barrel,-tw*.12,-th/2,tw,th);q.drawImage(base,-bw/2,-bh/2,bw,bh);q.restore();
  };paint();if(kind==='weapon'){for(const name of ({gun:['autocannon_base','autocannon_barrel'],heavy:['heavy_cannon_base','heavy_cannon_barrel'],scatter:['scattergun_base','scattergun_barrel']}[key]||[])){const im=assetImages[name];if(im&&!im.complete)im.addEventListener('load',paint,{once:true})}}
  });
 }
