@@ -203,11 +203,20 @@ function drawHangarPreview(){
   q.translate(-w/2-fit*target.x,-h/2-fit*target.y);
  }
  paintParts(q,w/2,h/2,previewScale);
- if(!target){
-  // Show the equipped booster at normal thrust, behind the stern, using the exact hangar ship scale.
-  q.save();q.translate(w/2,h/2);q.scale(fit,fit);
-  drawPlasma(q,boosterSternX()-8,0,.72,false,0);
-  q.restore();
+ // Render the equipped normal-thrust exhaust in both full and zoomed hangar views.
+ q.save();q.translate(w/2,h/2);q.scale(fit,fit);
+ drawPlasma(q,boosterSternX()-8,0,.72,false,0);
+ q.restore();
+ if(target){
+  // The stern can be outside the zoomed viewport. Keep a small, non-boosted
+  // exhaust preview visible in the corner so changing booster colors is clear.
+  q.save();q.setTransform(1,0,0,1,0,0);
+  q.fillStyle='#0b2636dd';q.strokeStyle='#456779';
+  q.beginPath();q.roundRect(w-175,14,161,60,9);q.fill();q.stroke();
+  q.font='11px system-ui';q.fillStyle='#b2cdd9';q.fillText('부스터 기본 분사',w-162,31);
+  q.save();q.translate(w-75,53);
+  drawPlasma(q,0,0,.65,false,0);
+  q.restore();q.restore();
  }
  if(target){
   // Calculate the equipped sprite's footprint geometrically. Do not read
