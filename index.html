@@ -388,7 +388,7 @@ function drawPlayerBars(){
 const backgroundAssetNames=['deepsea_base','distant_terrain','seamount_01','seamount_02','seamount_03','seamount_04','seamount_05'];
 const backgroundAssets={};
 for(const name of backgroundAssetNames){
- const img=new Image();img.decoding='async';img.src='./background/'+name+'.png';backgroundAssets[name]=img;
+ const img=new Image();img.decoding='async';img.src='./'+name+'.png';backgroundAssets[name]=img;
 }
 function readyBackground(name){const im=backgroundAssets[name];return !!(im&&im.complete&&im.naturalWidth&&im.naturalHeight)}
 function drawTiledBackground(name,speed,alpha=1){
