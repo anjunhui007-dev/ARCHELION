@@ -196,7 +196,7 @@ function drawHangarPreview(){
  q.save();
  if(target){const zoom=2.45;q.translate(w/2,h/2);q.scale(zoom,zoom);q.translate(-w/2-fit*target.x,-h/2-fit*target.y)}
  if(!target){q.save();q.translate(w/2,h/2);drawShipExhaust(q,hangarBoosterPreview,performance.now()/1000,true);q.restore()}
- paintParts(q,w/2,h/2,1);
+ paintParts(q,w/2,h/2,target?1:1.34);
  if(target){
   const im=assetImages[target.asset];const pw=(im?.naturalWidth||100)*target.scale*fit,ph=(im?.naturalHeight||100)*target.scale*fit;
   // Dashed white selection boundary follows the visible mount footprint.
