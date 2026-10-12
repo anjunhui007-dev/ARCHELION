@@ -98,7 +98,8 @@ function openInventory(category='hull'){
   const equipped=category==='weapon'?hangar.weapons.includes(key):hangar[category]===key;
   const asset=category==='weapon'?(key==='torpedo'?'torpedo_ejection_gate':key.startsWith('side_')?key:null):category==='booster'?null:key+'_'+category;
   const composite=category==='booster'||(category==='weapon'&&['gun','heavy','scatter'].includes(key));
-  html+='<div class="inventory-item '+(equipped?'equipped':'')+'"><div class="inventory-art">'+(composite?'<canvas data-item-preview="'+category+':'+key+'" width="320" height="140"></canvas>':asset?'<img src="'+ASSET_ROOT+asset+'.png" alt="'+escapeHtml(info[0])+'" loading="lazy" onerror="this.style.display=\'none\';this.parentNode.textContent=\'에셋 미리보기 없음\'">':'')+'</div><div class="inventory-name">'+escapeHtml(info[0])+(equipped?'<span class="inventory-equipped">● 장착 중</span>':'')+'</div><div class="inventory-kind">'+(category==='weapon'?'무장 부품':'잠수함 구성 부품')+'</div><div class="inventory-desc">'+escapeHtml(info[1])+'</div></div>';
+  const hullScale=category==='hull'?({swift:.72,guardian:.88,leviathan:1.12}[key]||1):1;
+  html+='<div class="inventory-item '+(equipped?'equipped':'')+'"><div class="inventory-art">'+(composite?'<canvas data-item-preview="'+category+':'+key+'" width="320" height="140"></canvas>':asset?'<img style="'+(category==='hull'?'max-width:'+Math.round(82*hullScale)+'%;max-height:'+Math.round(83*hullScale)+'%;':'')+'" src="'+ASSET_ROOT+asset+'.png" alt="'+escapeHtml(info[0])+'" loading="lazy" onerror="this.style.display=\'none\';this.parentNode.textContent=\'에셋 미리보기 없음\'">':'')+'</div><div class="inventory-name">'+escapeHtml(info[0])+(equipped?'<span class="inventory-equipped">● 장착 중</span>':'')+'</div><div class="inventory-kind">'+(category==='weapon'?'무장 부품':'잠수함 구성 부품')+'</div><div class="inventory-desc">'+escapeHtml(info[1])+'</div></div>';
  }
  html+='</div></div>';card.innerHTML=html;
  $('inventoryBack').onclick=mainMenu;
