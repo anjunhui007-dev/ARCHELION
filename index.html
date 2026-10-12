@@ -128,7 +128,7 @@ function drawMountedWeapon(q,weapon,geo,angle=0){
  q.drawImage(barrel,-barrel.naturalWidth*.16,-barrel.naturalHeight*.5);q.restore();
  q.drawImage(base,-base.naturalWidth*.52,-baseBottom);q.restore();
 }
-function battleAssemblyFit(){const hull=assetImages[hangar.hull+'_hull'];const base=Math.min(500/(1100*1.30),250/(560*1.30))*({swift:.78,guardian:1,leviathan:1.30}[hangar.hull]||1)*.50;if(!hull?.naturalWidth)return base;const leviathan=assetImages.leviathan_hull;const refHeight=leviathan?.naturalWidth?leviathan.naturalHeight*800/leviathan.naturalWidth:560;const referenceFit=Math.min(500/(1100*1.30),250/(560*1.30))*1.30*.50;const targetHeight=Math.max(40,H*.18);const referenceHeight=refHeight*referenceFit;return base*clamp(targetHeight/referenceHeight,.35,1.45)}
+function battleAssemblyFit(){const hull=assetImages[hangar.hull+'_hull'];const base=Math.min(500/(1100*1.30),250/(560*1.30))*({swift:.78,guardian:1,leviathan:1.30}[hangar.hull]||1)*.50;if(!hull?.naturalWidth)return base;const leviathan=assetImages.leviathan_hull;const refHeight=leviathan?.naturalWidth?leviathan.naturalHeight*800/leviathan.naturalWidth:560;const referenceFit=Math.min(500/(1100*1.30),250/(560*1.30))*1.30*.50;const targetHeight=Math.max(28,H*.12);const referenceHeight=refHeight*referenceFit;return base*clamp(targetHeight/referenceHeight,.35,1.45)}
 function boosterSternX(){const im=assetImages[hangar.hull+'_hull'];return im?.naturalWidth?-800/2+18:-382}
 function paintBattlePlayer(q){
  const fit=battleAssemblyFit();
