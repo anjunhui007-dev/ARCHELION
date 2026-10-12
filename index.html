@@ -239,14 +239,14 @@ const upgradeDefs=[['hull','선체 보강','최대 체력 +45',900],['engine','�
 function shop(message='출항 준비'){mode='shop';panel.style.display='flex';let html='<h1>ABYSS</h1><p>'+message+'</p><div class="money">₡ '+money.toLocaleString()+'</div><div class="shop">';for(const [id,name,desc,base] of upgradeDefs){let cost=base*(lv[id]+1);html+='<button data-up="'+id+'" '+(money<cost||lv[id]>=8?'disabled':'')+'>'+name+' <span style="color:#94d9cb">Lv.'+lv[id]+'</span><br>'+desc+'<br>₡ '+cost.toLocaleString()+'</button>'}html+='</div><button id="hangarOpen">⚙ 격납고 · 기체/무장 편집</button><br><br><button id="launch">STAGE '+stage+' 출항 →</button> <button id="mainMenuBtn">메인 메뉴</button><p style="font-size:12px">게임 진행은 이 브라우저에 자동 저장됩니다.</p>';card.innerHTML=html;card.querySelectorAll('[data-up]').forEach(b=>b.onclick=()=>{const id=b.dataset.up,def=upgradeDefs.find(x=>x[0]===id),cost=def[3]*(lv[id]+1);if(money>=cost&&lv[id]<8){money-=cost;lv[id]++;save();shop(message)}});$('hangarOpen').onclick=openHangar;$('launch').onclick=()=>{save();reset()};$('mainMenuBtn').onclick=()=>{save();mainMenu()}}
 function flash(s){$('notice').textContent='!';noticeTimer=1.25}
 function spawnEnemy(){const x=W+rand(70,190),margin=Math.min(55,H*.2),gunner=Math.random()<.27;enemies.push({x,y:rand(margin,H-margin),hp:48+stage*19,max:48+stage*19,speed:rand(35,72)+stage*2,fire:rand(1.7,3.6),dir:-1,r:29,seed:rand(0,10),angle:0,boss:false,gunner,telegraph:0,burstLeft:0,burstGap:0})}
-function spawnBoss(){phase='boss';bossSpawned=true;const hp=440+stage*190;enemies.push({x:W+145,y:H*.5,hp,max:hp,speed:35+stage*2,fire:2,dir:-1,r:78,seed:0,angle:0,boss:true,telegraph:1.8,gunCooldown:1.1,burstLeft:0,burstGap:0,followV:0,desiredGap:Math.max(190,W*.38)});flash('⚠ 보스 접근!')}
+function spawnBoss(){phase='boss';bossSpawned=true;const hp=440+stage*190;enemies.push({x:W+145,y:H*.5,hp,max:hp,speed:35+stage*2,fire:2,dir:-1,r:78,seed:0,angle:0,boss:true,telegraph:1.8,gunCooldown:1.1,burstLeft:0,burstGap:0,followV:0,desiredGap:Math.max(170,Math.min(W*.36,weaponRangeFor('gun')*.72))});flash('⚠ 보스 접근!')}
 function launchTorpedo(x,y,speed=95,turn=1.1,boss=false){const a=Math.atan2(player.y-y,player.x-x);torps.push({x,y,vx:Math.cos(a)*speed,vy:Math.sin(a)*speed,speed,turn,life:12,r:boss?10:8,boss,passed:false})}
 function spawnTorpedoRaid(){const center=clamp(player.y+rand(-110,110),70,H-70),count=Math.random()<.45?3:2;for(let j=0;j<count;j++){const y=clamp(center+(j-(count-1)/2)*65,40,H-40);launchTorpedo(W+25+j*32,y,115+stage*5,.55)}flash('⚠ 외부 어뢰 접근!');raidTimer=rand(8,14)}
 function spawnMine(){const y=rand(Math.max(110,H*.65),Math.max(125,H-105));mines.push({x:W+48,y,anchorY:H-48,r:18,seed:rand(0,6.28),hit:false});mineTimer=rand(7,13)}
 function addGold(x,y,amount){money+=amount;goldPop.push({x,y,amount,life:1.25});}
 function burst(x,y,n,color='#94d6e3'){for(let i=0;i<n;i++)particles.push({x,y,vx:rand(-100,100),vy:rand(-100,100),life:rand(.3,.9),max:.9,color,r:rand(1,4)})}
 function exhaustBubble(x,y,vx,vy,boosted=false){if(bubbles.length>220)bubbles.shift();const life=rand(.65,1.45);bubbles.push({x:x+rand(-3,3),y:y+rand(-5,5),vx:vx+rand(-15,12),vy:vy+rand(-13,4),r:rand(boosted?1.8:1,boosted?4.6:3.2),life,max:life,alpha:rand(.16,.38)})}
-const weaponRange={gun:Math.max(270,W*.49),heavy:Math.max(310,W*.60),scatter:Math.max(160,W*.29)};
+function weaponRangeFor(weapon){return ({gun:Math.max(340,W*.54),heavy:Math.max(410,W*.66),scatter:Math.max(220,W*.36)})[weapon]||Math.max(340,W*.48)}
 function weaponMuzzles(slot){
  const i=player.slots.indexOf(slot),geo=slotGeometry(i),prefix=weaponSprites[slot.weapon];
  const base=assetImages[prefix+'_base'],barrel=assetImages[prefix+'_barrel'],mount=assetImages[geo?.asset];
@@ -287,7 +287,7 @@ function fireGun(slot,target){
  for(const m of muzzles)burst(m.x,m.y,slot.weapon==='scatter'?2:4,'#e9d3a2');
 }
 function targetFor(slot){
- const sx=player.x+slot.x,sy=player.y+slot.y,range=(weaponRange[slot.weapon]||390)+lv.radar*12;
+ const sx=player.x+slot.x,sy=player.y+slot.y,range=weaponRangeFor(slot.weapon)+lv.radar*12;
  let best=null,score=Infinity;
  for(const t of enemies){
   const dx=t.x-sx,dy=t.y-sy,d=Math.hypot(dx,dy);
