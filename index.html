@@ -63,6 +63,7 @@ const sideWeaponNames={none:'미장착',side_laser:'레이저 포탑',side_railg
 const sidePivots={side_laser:[210,267],side_railgun:[210,267],side_interceptor:[215,267],side_shield:[224,267],side_emp:[220,267]};
 const mainWeaponKeys=['gun','heavy','scatter','torpedo'];const weaponSprites={gun:'autocannon',heavy:'heavy_cannon',scatter:'scattergun'};
 let hangar=(()=>{try{return Object.assign({hull:'guardian',sail:'standard',fin:'standard',weapons:[]},JSON.parse(localStorage.getItem(HKEY))||{})}catch{return {hull:'guardian',sail:'standard',fin:'standard',weapons:[]}}})();
+function weaponUnavailable(weapon,selected){if(weapon==='side_railgun'&&hangar.hull==='swift')return '스위프트 장착 불가';const limit=weapon==='side_emp'||weapon==='side_shield'||(weapon==='side_railgun'&&hangar.hull==='guardian')?1:Infinity;if(limit===Infinity)return '';const used=hangar.weapons.filter((w,i)=>i!==selected&&w===weapon).length;return used>=limit?'최대 '+limit+'개 장착됨':''}
 function enforceUniqueSpecials(){for(const type of [...['side_emp','side_shield'],...(hangar.hull==='leviathan'?[]:['side_railgun'])]){let found=false;hangar.weapons=hangar.weapons.map(w=>{if(w!==type)return w;if(found)return 'none';found=true;return w})}}function saveHangar(){enforceUniqueSpecials();localStorage.setItem(HKEY,JSON.stringify(hangar))}enforceUniqueSpecials();
 function currentSlots(){
 const sail=ASSEMBLY_PRESETS.find(p=>p[0]===hangar.hull&&p[1]===hangar.sail)||ASSEMBLY_PRESETS.find(p=>p[0]===hangar.hull);
@@ -316,7 +317,7 @@ function openHangar(){
   (slot.type==='deck'?[['none',['미장착']],...Object.entries(weaponDefs).filter(([key])=>mainWeaponKeys.includes(key))]:[]).forEach(([key,def])=>{
    h+='<button data-weapon-choice="'+key+'" class="'+(slot.weapon===key?'selected':'')+'">'+(slot.weapon===key?'✓ ':'')+def[0]+'</button>';
   });
-  if(slot.type==='side'){for(const [key,name] of Object.entries(sideWeaponNames)){h+='<button data-weapon-choice="'+key+'" class="'+(slot.weapon===key?'selected':'')+'">'+(slot.weapon===key?'✓ ':'')+name+'</button>';}}
+  if(slot.type==='side'){for(const [key,name] of Object.entries(sideWeaponNames)){const reason=weaponUnavailable(key,selected),disabled=!!reason;h+='<button data-weapon-choice="'+key+'" class="'+(slot.weapon===key?'selected':'')+'" '+(disabled?'disabled title="'+reason+'" style="opacity:.38;cursor:not-allowed;filter:grayscale(1)"':'')+'>'+(slot.weapon===key?'✓ ':'')+name+(disabled?' · '+reason:'')+'</button>';}}
   h+='</div><button class="hangar-done" id="hangarBack">← 무장 슬롯 목록</button>';
  }
  h+='</div></div>';
@@ -326,7 +327,7 @@ function openHangar(){
 
  card.querySelectorAll('[data-part]').forEach(e=>e.onchange=()=>{hangar[e.dataset.part]=e.value;hangarSelectedSlot=null;saveHangar();openHangar()});
  card.querySelectorAll('[data-slot]').forEach(e=>e.onclick=()=>{hangarSelectedSlot=+e.dataset.slot;openHangar()});
- card.querySelectorAll('[data-weapon-choice]').forEach(e=>e.onclick=()=>{const weapon=e.dataset.weaponChoice;if((weapon==='side_emp'||weapon==='side_shield'||(weapon==='side_railgun'&&hangar.hull!=='leviathan'))&&hangar.weapons.some((w,i)=>i!==selected&&w===weapon)){flash((weapon==='side_emp'?'EMP':weapon==='side_railgun'?'레일건':'보호막')+'은 이 기함에서 1개만 장착할 수 있습니다.');return}hangar.weapons[selected]=weapon;saveHangar();openHangar()});
+ card.querySelectorAll('[data-weapon-choice]').forEach(e=>e.onclick=()=>{const weapon=e.dataset.weaponChoice;if(weaponUnavailable(weapon,selected))return;if((weapon==='side_emp'||weapon==='side_shield'||(weapon==='side_railgun'&&hangar.hull!=='leviathan'))&&hangar.weapons.some((w,i)=>i!==selected&&w===weapon)){flash((weapon==='side_emp'?'EMP':weapon==='side_railgun'?'레일건':'보호막')+'은 이 기함에서 1개만 장착할 수 있습니다.');return}hangar.weapons[selected]=weapon;saveHangar();openHangar()});
  if($('hangarBack'))$('hangarBack').onclick=()=>{hangarSelectedSlot=null;openHangar()};
  if($('hangarDone'))$('hangarDone').onclick=()=>{hangarSelectedSlot=null;saveHangar();mainMenu()};
 }
