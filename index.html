@@ -37,7 +37,7 @@ const sideWeaponNames={none:'미장착',side_laser:'레이저 포탑',side_railg
 const sidePivots={side_laser:[210,267],side_railgun:[210,267],side_interceptor:[215,267],side_shield:[224,267],side_emp:[220,267]};
 const mainWeaponKeys=['gun','heavy','scatter','torpedo'];const weaponSprites={gun:'autocannon',heavy:'heavy_cannon',scatter:'scattergun'};
 let hangar=(()=>{try{return Object.assign({hull:'guardian',sail:'standard',fin:'standard',weapons:[]},JSON.parse(localStorage.getItem(HKEY))||{})}catch{return {hull:'guardian',sail:'standard',fin:'standard',weapons:[]}}})();
-function saveHangar(){localStorage.setItem(HKEY,JSON.stringify(hangar))}
+function enforceUniqueSpecials(){for(const type of ['side_emp','side_shield']){let found=false;hangar.weapons=hangar.weapons.map(w=>{if(w!==type)return w;if(found)return 'none';found=true;return w})}}function saveHangar(){enforceUniqueSpecials();localStorage.setItem(HKEY,JSON.stringify(hangar))}enforceUniqueSpecials();
 function currentSlots(){
 const sail=ASSEMBLY_PRESETS.find(p=>p[0]===hangar.hull&&p[1]===hangar.sail)||ASSEMBLY_PRESETS.find(p=>p[0]===hangar.hull);
 return assemblySlots().map((v,i)=>{
@@ -307,13 +307,13 @@ function openHangar(){
 
  card.querySelectorAll('[data-part]').forEach(e=>e.onchange=()=>{hangar[e.dataset.part]=e.value;hangarSelectedSlot=null;saveHangar();openHangar()});
  card.querySelectorAll('[data-slot]').forEach(e=>e.onclick=()=>{hangarSelectedSlot=+e.dataset.slot;openHangar()});
- card.querySelectorAll('[data-weapon-choice]').forEach(e=>e.onclick=()=>{hangar.weapons[selected]=e.dataset.weaponChoice;saveHangar();openHangar()});
+ card.querySelectorAll('[data-weapon-choice]').forEach(e=>e.onclick=()=>{const weapon=e.dataset.weaponChoice;if((weapon==='side_emp'||weapon==='side_shield')&&hangar.weapons.some((w,i)=>i!==selected&&w===weapon)){flash((weapon==='side_emp'?'EMP':'보호막')+'은 1개만 장착할 수 있습니다.');return}hangar.weapons[selected]=weapon;saveHangar();openHangar()});
  if($('hangarBack'))$('hangarBack').onclick=()=>{hangarSelectedSlot=null;openHangar()};
  if($('hangarDone'))$('hangarDone').onclick=()=>{hangarSelectedSlot=null;shop('격납고 정비 완료')};
 }
 const maxHp=()=>150+lv.hull*45,moveSpeed=()=>185+lv.engine*27;
 let assemblyGlowCanvas=null,assemblyGlowKey='';let sideEffects=[];let shieldHp=0,shieldMax=0,shieldFlash=0;
-function reset(){sideEffects=[];shieldFlash=0;shieldMax=currentSlots().filter(s=>s.weapon==='side_shield').length*100;shieldHp=shieldMax;scrollX=0;phase='wave';bossSpawned=false;goldPop=[];interceptors=[];interceptCooldown=0;raidTimer=rand(6,10);enemyShots=[];mines=[];mineTimer=rand(5,9);bubbles=[];bubbleTick=0;player={x:W*.25,y:H*.52,vx:0,vy:0,hp:maxHp(),angle:0,slots:[],inv:0};boost=100;enemies=[];torps=[];bullets=[];particles=[];waves=[];spawned=0;spawnTimer=1.1;time=0;player.slots=currentSlots();mode='play';panel.style.display='none'}
+function reset(){sideEffects=[];shieldFlash=0;shieldMax=currentSlots().some(s=>s.weapon==='side_shield')?100:0;shieldHp=shieldMax;scrollX=0;phase='wave';bossSpawned=false;goldPop=[];interceptors=[];interceptCooldown=0;raidTimer=rand(6,10);enemyShots=[];mines=[];mineTimer=rand(5,9);bubbles=[];bubbleTick=0;player={x:W*.25,y:H*.52,vx:0,vy:0,hp:maxHp(),angle:0,slots:[],inv:0};boost=100;enemies=[];torps=[];bullets=[];particles=[];waves=[];spawned=0;spawnTimer=1.1;time=0;player.slots=currentSlots();mode='play';panel.style.display='none'}
 const upgradeDefs=[['hull','선체 보강','최대 체력 +45',900],['engine','추진기 강화','이동 속도 +27',1100],['gun','함포 강화','화력·연사 향상',1350],['radar','요격 레이더','어뢰 요격 우선 거리 증가',950]];
 function shop(message='출항 준비'){mode='shop';panel.style.display='flex';let html='<h1>ABYSS</h1><p>'+message+'</p><div class="money">₡ '+money.toLocaleString()+'</div><div class="shop">';for(const [id,name,desc,base] of upgradeDefs){let cost=base*(lv[id]+1);html+='<button data-up="'+id+'" '+(money<cost||lv[id]>=8?'disabled':'')+'>'+name+' <span style="color:#94d9cb">Lv.'+lv[id]+'</span><br>'+desc+'<br>₡ '+cost.toLocaleString()+'</button>'}html+='</div><button id="hangarOpen">⚙ 격납고 · 기체/무장 편집</button><br><br><button id="launch">STAGE '+stage+' 출항 →</button> <button id="mainMenuBtn">메인 메뉴</button><p style="font-size:12px">게임 진행은 이 브라우저에 자동 저장됩니다.</p>';card.innerHTML=html;card.querySelectorAll('[data-up]').forEach(b=>b.onclick=()=>{const id=b.dataset.up,def=upgradeDefs.find(x=>x[0]===id),cost=def[3]*(lv[id]+1);if(money>=cost&&lv[id]<8){money-=cost;lv[id]++;save();shop(message)}});$('hangarOpen').onclick=openHangar;$('launch').onclick=()=>{save();reset()};$('mainMenuBtn').onclick=()=>{save();mainMenu()}}
 function flash(s){$('notice').textContent='!';noticeTimer=1.25}
