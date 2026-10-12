@@ -106,6 +106,7 @@
  .gacha-screen:not(.gacha-result-screen) .gacha-art{height:65px}
 }
 .gacha-pity-info{margin:9px 0;padding:9px 12px;border:1px solid #53778c;background:#0c293b;border-radius:9px;color:#c5dce7;text-align:center;font-size:13px}.gacha-pity-info strong{color:#f5c45c;font-size:16px}
+.gacha-pity-info{display:flex;justify-content:center;gap:18px;flex-wrap:wrap;align-items:center}.gacha-pity-info span{white-space:nowrap}@media (orientation:landscape) and (max-height:650px){.gacha-result-screen .gacha-pity-info{padding:5px 8px;margin:5px 0;font-size:11px}.gacha-result-screen .gacha-pity-info strong{font-size:13px}}
 </style><style>
 #card:has(.main-screen){max-width:none;width:100vw;height:100dvh;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;overflow:hidden}
 .main-screen{position:relative;width:100%;height:100%;overflow:hidden;background:radial-gradient(ellipse at 50% 48%,#193e4b 0%,#0b2431 40%,#040f19 100%)}
@@ -244,7 +245,7 @@ function gachaDraw(type,n){
  }
  gems-=n*100;localStorage.setItem(GEM_KEY,String(gems));localStorage.setItem(PARTS_KEY,JSON.stringify(partProgress));saveGacha();
  mode='gacha';panel.style.display='flex';
- card.innerHTML='<div class="gacha-screen gacha-result-screen"><h2>보급 결과</h2><div class="gacha-wallet">◆ '+gems.toLocaleString()+' · MP '+gachaData.mileage.toLocaleString()+'</div><div class="gacha-gallery">'+gachaCards(results)+'</div><p>파츠 강화 재료 각 +1 · 마일리지 +'+n*10+'</p><div class="gacha-buttons"><button id="again">다시 뽑기</button><button id="returnGacha">보급함으로</button><button id="returnHome">메인 메뉴</button></div></div>';
+ card.innerHTML='<div class="gacha-screen gacha-result-screen"><h2>보급 결과</h2><div class="gacha-wallet">◆ '+gems.toLocaleString()+' · MP '+gachaData.mileage.toLocaleString()+'</div><div class="gacha-pity-info"><span>영웅 이상 확정까지 <strong>'+(10-gachaData.count[type])+'회</strong></span><span>전설 확정까지 <strong>'+(50-gachaData.legend[type])+'회</strong></span></div><div class="gacha-gallery">'+gachaCards(results)+'</div><p>파츠 강화 재료 각 +1 · 마일리지 +'+n*10+'</p><div class="gacha-buttons"><button id="again">다시 뽑기</button><button id="returnGacha">보급함으로</button><button id="returnHome">메인 메뉴</button></div></div>';
  $('again').onclick=()=>gachaDraw(type,n);$('returnGacha').onclick=()=>gachaScreen(type);$('returnHome').onclick=mainMenu;renderInventoryPreviews(card);
 }
 function gachaScreen(type='unarmed',msg=''){
