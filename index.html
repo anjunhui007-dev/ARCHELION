@@ -448,11 +448,17 @@ for(const b of bubbles){ctx.globalAlpha=b.alpha*clamp(b.life/b.max,0,1);ctx.stro
  if(!assemblyGlowCanvas||assemblyGlowKey!==glowKey){
   assemblyGlowCanvas=document.createElement('canvas');assemblyGlowCanvas.width=640;assemblyGlowCanvas.height=360;
   const gc=assemblyGlowCanvas.getContext('2d');gc.translate(320,180);
+  // Cache a clean hull silhouette in assembly coordinates; apply the battle-only scale when drawing.
   gc.save();gc.scale(.5,.5);paintParts(gc,0,0,1,false);gc.restore();
   gc.setTransform(1,0,0,1,0,0);gc.globalCompositeOperation='source-in';gc.fillStyle='#35bfff';gc.fillRect(0,0,640,360);
   assemblyGlowKey=glowKey;
  }
- ctx.save();ctx.globalAlpha=.42*Math.sin(Math.PI*p);ctx.drawImage(assemblyGlowCanvas,-320,-180);ctx.restore();
+ const hullSize=({swift:.78,guardian:1,leviathan:1.30}[hangar.hull]||1);
+ const assemblyFit=Math.min(500/(1100*1.30),250/(560*1.30))*hullSize;
+ // The cached silhouette was drawn at half assembly scale. Match the actual in-game ship,
+ // including its 0.90 visual reduction, rather than the enlarged hangar preview.
+ const glowScale=.90*battleAssemblyFit()/(assemblyFit*.5);
+ ctx.save();ctx.globalAlpha=.42*Math.sin(Math.PI*p);ctx.scale(glowScale,glowScale);ctx.drawImage(assemblyGlowCanvas,-320,-180);ctx.restore();
 }ctx.restore()}
 for(const slot of player.slots){if(slot.weapon==='side_railgun'&&slot.railGlow>0){
  const geo=slotGeometry(player.slots.indexOf(slot)),im=assetImages.side_railgun,mount=assetImages[geo?.asset],pivot=sidePivots.side_railgun;
