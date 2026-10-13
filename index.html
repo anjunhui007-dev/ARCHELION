@@ -147,6 +147,7 @@
 }
 .shop-stats{background:linear-gradient(145deg,#102c40,#071b2b)!important;border-color:#47778b!important;box-shadow:0 8px 30px #0003}.shop-stats h3{letter-spacing:.8px;border-bottom:1px solid #34586a;padding-bottom:9px}.shop-stat-grid{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))!important;gap:8px!important}.shop-stat{flex-direction:column;align-items:flex-start!important;gap:5px!important;background:linear-gradient(130deg,#153b4d,#0a2636)!important;border:1px solid #355d70!important;border-radius:9px!important;padding:10px 12px!important}.shop-stat strong{font-size:clamp(14px,1.7vw,18px);color:#d0f9ed!important}.shop-stat span{font-size:11px}
 #dpsHud{position:fixed;z-index:45;right:12px;top:65px;width:min(340px,38vw);pointer-events:auto;color:#e3f4fa;font:12px system-ui;background:#071d2aee;border:1px solid #4c879b;border-radius:12px;padding:11px;box-shadow:0 8px 25px #0009}.dps-title{font-weight:800;font-size:15px;display:flex;justify-content:space-between;margin-bottom:9px}.dps-title small{color:#8ebbcf}.dps-numbers{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}.dps-numbers span{display:flex;flex-direction:column;font-size:10px;color:#99c0ce;background:#123344;padding:6px;border-radius:6px}.dps-numbers b{font-size:14px;color:#f3e2aa}.dps-breakdown{margin-top:9px;max-height:150px;overflow:auto}.dps-share{display:grid;grid-template-columns:65px 1fr 42px;gap:6px;align-items:center;margin:5px 0;font-size:10px}.dps-share b{text-align:right}.dps-track{height:6px;background:#29485a;border-radius:5px;overflow:hidden}.dps-track i{display:block;height:100%;background:#7fd2c3}#dpsExit{margin-top:8px;padding:6px 12px;font-size:11px;width:100%}@media(max-width:650px){#dpsHud{right:5px;top:45px;width:220px;padding:7px}.dps-numbers b{font-size:11px}}
+.gold-purchase-overlay{position:fixed;inset:0;z-index:9999;background:#03111cce;display:flex;align-items:center;justify-content:center;padding:15px}.gold-purchase-modal{width:min(430px,95vw);max-height:90dvh;overflow:auto;padding:22px;border:1px solid #4e8193;border-radius:16px;background:linear-gradient(145deg,#173747,#071c2b);box-shadow:0 16px 60px #0009;color:#e5f5fb;text-align:left}.gold-purchase-modal h2{margin:0 0 10px}.gold-purchase-modal p{font-size:13px;color:#b6d4df}.gold-purchase-modal label{display:block;margin:16px 0 8px;font-weight:700}.gold-quantity{display:flex;gap:7px}.gold-quantity input{min-width:0;flex:1;width:70px;background:#061b2a;color:#fff;border:1px solid #4a8394;border-radius:8px;padding:8px;text-align:center;font-size:16px}.gold-quantity button{min-width:42px;padding:8px;border-radius:8px}.gold-purchase-total{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:16px 0;padding:12px;border:1px solid #426a79;border-radius:9px;background:#0a2838}.gold-purchase-total span{display:flex;flex-direction:column;font-size:11px;color:#a8cbd7}.gold-purchase-total strong{font-size:16px;color:#e8d39a}.gold-purchase-actions{display:flex;gap:10px}.gold-purchase-actions button{flex:1;padding:10px;border-radius:8px}
 </style><style>
 #card:has(.main-screen){max-width:none;width:100vw;height:100dvh;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;overflow:hidden}
 .main-screen{position:relative;width:100%;height:100%;overflow:hidden;background:radial-gradient(ellipse at 50% 48%,#193e4b 0%,#0b2431 40%,#040f19 100%)}
@@ -329,20 +330,43 @@ const GEM_PACKS=[
  {gems:2300,price:'₩22,000'},
  {gems:6000,price:'₩55,000'}
 ];
-const GOLD_PACKS=[{gems:100,gold:1000},{gems:500,gold:6000},{gems:1000,gold:14000}];
+const GOLD_PACKS=[{gems:100,gold:10000},{gems:500,gold:60000},{gems:1000,gold:140000}];
 function gemShop(message=''){
  mode='gemshop';panel.style.display='flex';
  let html='<div class="gem-shop-screen"><h1>◆ 보석 상점</h1><p>보석 충전 및 골드 교환</p><div class="gem-shop-wallet">◆ '+gems.toLocaleString()+' 보석 <span>₡ '+money.toLocaleString()+' 골드</span></div>'+(message?'<p class="gacha-alert">'+message+'</p>':'')+'<h3>보석 충전</h3><div class="gem-shop-grid">';
  GEM_PACKS.forEach((pack,i)=>{html+='<button data-gem-pack="'+i+'"><strong>◆ '+pack.gems.toLocaleString()+'</strong><span>'+pack.price+'</span><small>테스트 충전</small></button>'});
  html+='</div><h3>보석으로 골드 구매</h3><div class="gem-shop-grid">';
  GOLD_PACKS.forEach((pack,i)=>{html+='<button data-gold-pack="'+i+'" '+(gems<pack.gems?'disabled':'')+'><strong>₡ '+pack.gold.toLocaleString()+'</strong><span>◆ '+pack.gems.toLocaleString()+'</span><small>골드 교환</small></button>'});
- html+='</div><p class="gem-shop-note">보석 충전은 테스트 기능으로 실제 결제가 발생하지 않습니다. 골드 구매는 보석을 차감하며 즉시 저장됩니다.</p><button id="gemShopBack">← 메인 메뉴</button></div>';
+ html+='</div><p class="gem-shop-note">보석 충전은 테스트 기능으로 실제 결제가 발생하지 않습니다. 골드 구매는 상품 선택 → 수량 선택 → 최종 확인 후 진행됩니다.</p><button id="gemShopBack">← 메인 메뉴</button></div>';
  card.innerHTML=html;
  card.querySelectorAll('[data-gem-pack]').forEach(b=>b.onclick=()=>{const pack=GEM_PACKS[Number(b.dataset.gemPack)];if(!pack)return;gems+=pack.gems;localStorage.setItem(GEM_KEY,String(gems));gemShop('보석 '+pack.gems.toLocaleString()+'개 충전 완료')});
- card.querySelectorAll('[data-gold-pack]').forEach(b=>b.onclick=()=>{const pack=GOLD_PACKS[Number(b.dataset.goldPack)];if(!pack||gems<pack.gems)return;gems-=pack.gems;money+=pack.gold;localStorage.setItem(GEM_KEY,String(gems));save();gemShop('골드 ₡ '+pack.gold.toLocaleString()+' 구매 완료')});
+ card.querySelectorAll('[data-gold-pack]').forEach(b=>b.onclick=()=>goldPurchaseDialog(Number(b.dataset.goldPack)));
+
  $('gemShopBack').onclick=mainMenu;
 }
 
+function goldPurchaseDialog(index){
+ const pack=GOLD_PACKS[index];if(!pack||gems<pack.gems)return;
+ const max=Math.floor(gems/pack.gems);
+ const overlay=document.createElement('div');overlay.className='gold-purchase-overlay';
+ overlay.innerHTML='<div class="gold-purchase-modal"><h2>골드 교환</h2><p>상품 1개당 <strong>₡ '+pack.gold.toLocaleString()+'</strong> · ◆ '+pack.gems.toLocaleString()+'</p><p>보유 보석 ◆ '+gems.toLocaleString()+' · 최대 '+max.toLocaleString()+'개 구매 가능</p><label for="goldQty">구매 수량</label><div class="gold-quantity"><button id="goldMinus" type="button">−</button><input id="goldQty" type="number" min="1" max="'+max+'" step="1" value="1"><button id="goldPlus" type="button">+</button><button id="goldMax" type="button">최대</button></div><div class="gold-purchase-total" id="goldPurchaseTotal"></div><div class="gold-purchase-actions"><button id="goldCancel">취소</button><button id="goldConfirm">구매 확인</button></div></div>';
+ document.body.appendChild(overlay);
+ const qty=overlay.querySelector('#goldQty'),total=overlay.querySelector('#goldPurchaseTotal');
+ const normalized=()=>{const n=Number(qty.value);return Number.isFinite(n)?Math.max(1,Math.min(max,Math.floor(n))):1};
+ const update=()=>{const n=normalized();qty.value=String(n);total.innerHTML='<span>사용 보석 <strong>◆ '+(pack.gems*n).toLocaleString()+'</strong></span><span>획득 골드 <strong>₡ '+(pack.gold*n).toLocaleString()+'</strong></span>'};
+ overlay.querySelector('#goldMinus').onclick=()=>{qty.value=String(normalized()-1);update()};
+ overlay.querySelector('#goldPlus').onclick=()=>{qty.value=String(normalized()+1);update()};
+ overlay.querySelector('#goldMax').onclick=()=>{qty.value=String(max);update()};
+ qty.addEventListener('input',()=>{const n=Number(qty.value);if(Number.isFinite(n)&&n>max)qty.value=String(max);if(Number.isFinite(n)&&n<1&&qty.value!=='')qty.value='1';const count=normalized();total.innerHTML='<span>사용 보석 <strong>◆ '+(pack.gems*count).toLocaleString()+'</strong></span><span>획득 골드 <strong>₡ '+(pack.gold*count).toLocaleString()+'</strong></span>'});
+ qty.addEventListener('change',update);
+ overlay.querySelector('#goldCancel').onclick=()=>overlay.remove();
+ overlay.querySelector('#goldConfirm').onclick=()=>{
+  const n=normalized(),cost=n*pack.gems,reward=n*pack.gold;
+  if(n<1||n>max||gems<cost){update();return}
+  gems-=cost;money+=reward;localStorage.setItem(GEM_KEY,String(gems));save();overlay.remove();gemShop('골드 ₡ '+reward.toLocaleString()+' 구매 완료 (◆ '+cost.toLocaleString()+' 사용)');
+ };
+ update();
+}
 function mainMenu(){mode='menu';panel.style.display='flex';card.innerHTML='<div class="main-screen"><div class="main-title"><h1>ABYSS</h1><span>STEEL DEPTHS</span></div><div class="main-sonar"><div class="sonar-sweep"></div><div class="sonar-cross"></div></div><canvas id="menuShip" width="900" height="320"></canvas><div class="main-currency" aria-label="보유 재화"><span>₡ '+money.toLocaleString()+'</span><span>◆ '+gems.toLocaleString()+'</span></div><div class="main-actions"><button id="startOperation">작전 시작</button><button id="mainHangar">잠수함 격납고</button><button id="mainShop">정비소</button><button id="mainInventory">파츠 도감</button><button id="mainGacha">파츠 가챠</button><button id="mainGemShop">◆ 보석 상점</button><button id="mainSettings">설정</button></div><div class="main-foot">TACTICAL SUBMARINE COMBAT SYSTEM</div></div>';$('startOperation').onclick=chapterSelect;$('mainHangar').onclick=()=>{if(activeSlot<0){const first=slots.findIndex(Boolean);if(first>=0){activeSlot=first;const v=slots[first];stage=v.stage||1;money=v.money??1200;lv=normalizeUpgrades(v.lv,v.upgradeVersion)}}hangarSelectedSlot=null;openHangar()};$('mainShop').onclick=()=>shop('정비소 · 기체 업그레이드');$('mainInventory').onclick=()=>openInventory();$('mainGacha').onclick=()=>gachaScreen();$('mainGemShop').onclick=gemShop;$('mainSettings').onclick=()=>showGameSettings(mainMenu);requestAnimationFrame(drawMenuShip)}
 function drawMenuShip(){const c=$('menuShip');if(!c||mode!=='menu')return;const q=c.getContext('2d');q.clearRect(0,0,c.width,c.height);q.save();q.translate(455,163+Math.sin(performance.now()*.0014)*3);const fit=1.78;q.scale(fit,fit);drawShipExhaust(q,true,performance.now()/1000);paintParts(q,0,0,1,true);q.restore();requestAnimationFrame(drawMenuShip)}
 function resetGameData(){
@@ -718,7 +742,7 @@ let damagePop=[];const formatDamage=n=>{const v=Math.max(0,n);return v>=1000?(v/
 let assemblyGlowCanvas=null,assemblyGlowKey='';let sideEffects=[];let shieldHp=0,shieldMax=0,shieldFlash=0,barrierHp=0;function absorbDamage(amount){if(shieldHp>0){shieldHp--;return}const blocked=Math.min(barrierHp,amount);barrierHp-=blocked;const taken=(amount-blocked)*(hangar.hull==='guardian'&&barrierHp<=0?.85:1);player.hp-=taken;showDamage(player.x,player.y,taken,'player');}
 function reset(){dpsMode=false;dpsData=null;sinkingTime=0;sideEffects=[];damagePop=[];goldGainQueue=[];shieldFlash=0;shieldMax=currentSlots().some(s=>s.weapon==='side_shield')?3:0;shieldHp=shieldMax;barrierHp=maxShieldHp();scrollX=0;phase='wave';bossSpawned=false;goldPop=[];interceptors=[];interceptCooldown=0;raidTimer=rand(6,10);enemyShots=[];mines=[];mineTimer=rand(5,9);bubbles=[];bubbleTick=0;player={x:W*.25,y:H*.52,vx:0,vy:0,hp:maxHp(),angle:0,slots:[],inv:0};boost=maxBoost();enemies=[];torps=[];bullets=[];particles=[];waves=[];spawned=0;spawnTimer=1.1;time=0;player.slots=currentSlots();mode='play';panel.style.display='none'}
 const upgradeDefs=[['crit','치명타 확률 강화','치명타 확률 +1%p · 최대 Lv.30',1200],['hp','체력 강화','최대 체력 +25',700],['attack','공격력 강화','공격력 +10',1000],['shield','보호막 체력 강화','최대 보호막 체력 +20 (자동 회복 없음)',900],['boost','부스터 게이지 강화','최대 게이지 +15',800]];
-const upgradeCost=(base,level)=>Math.round(base*Math.pow(1.32,level)/10)*10;
+const upgradeCost=(base,level)=>Math.round(base*Math.pow(1.12,level)/10)*10;
 function shopStatsHtml(){
  const flatAttack=100+lv.attack*10+equippedPartAttack();
  const attackPercent=(({streamlined:.03,standard:.01,armored:0}[hangar.sail]||0)+Math.floor(partLevel('sail',hangar.sail)/10)*.01+Math.floor(partTotalLevel()/30)*.01);
