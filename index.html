@@ -488,7 +488,7 @@ function dealEnemyDamage(target,base,weapon,hitX=target.x,hitY=target.y){
  return damage;
 }
 function startDpsTest(){
- reset();dpsMode=true;phase='training';spawnTimer=Infinity;
+ reset();dpsMode=true;phase='training';spawnTimer=Infinity;const oldHud=document.getElementById('dpsHud');if(oldHud)oldHud.remove();
  const x=Math.min(W-115,Math.max(W*.7,player.x+Math.min(450,W*.52)));
  enemies=[{x,y:H*.52,hp:1e30,max:1e30,speed:0,fire:Infinity,dir:-1,r:78,seed:0,angle:0,boss:true,kind:'dreadnought',training:true,telegraph:0,gunCooldown:Infinity,burstLeft:0,burstGap:0,followV:0,desiredGap:x-player.x}];
  dpsData={total:0,byWeapon:{},elapsed:0};
@@ -497,10 +497,11 @@ function dpsPanelHtml(){
  if(!dpsData)return '';
  const sec=Math.max(.001,dpsData.elapsed),total=dpsData.total,fmt=n=>Math.round(n).toLocaleString();
  const names={gun:'기관포',heavy:'중량 함포',scatter:'산탄',torpedo:'어뢰',side_laser:'레이저',side_railgun:'레일건'};
- const parts=Object.entries(dpsData.byWeapon).sort((a,b)=>b[1]-a[1]).map(([k,v])=>'<div class="dps-share"><span>'+(names[k]||k)+'</span><div class="dps-track"><i style="width:'+(total?v/total*100:0)+'%"></i></div><b>'+(total?(v/total*100).toFixed(1):'0')+'%</b></div>').join('');
+ const equipped=[...new Set((player.slots||[]).map(s=>s.weapon).filter(k=>Object.hasOwn(names,k)))];
+ const parts=[...new Set([...equipped,...Object.keys(dpsData.byWeapon)])].map(k=>[k,dpsData.byWeapon[k]||0]).sort((a,b)=>b[1]-a[1]).map(([k,v])=>'<div class="dps-share"><span>'+(names[k]||k)+'</span><div class="dps-track"><i style="width:'+(total?v/total*100:0)+'%"></i></div><b>'+(total?(v/total*100).toFixed(1):'0')+'%</b></div>').join('');
  return '<div class="dps-title">화력 시험장 <small>'+sec.toFixed(1)+'초</small></div><div class="dps-numbers"><span>DPS <b>'+fmt(total/sec)+'</b></span><span>DPM <b>'+fmt(total/sec*60)+'</b></span><span>총 피해 <b>'+fmt(total)+'</b></span></div><div class="dps-breakdown">'+(parts||'<small>공격하면 무장별 점유율이 표시됩니다.</small>')+'</div><button id="dpsExit" onclick="exitDpsTest()">시험 종료</button>';
 }
-function exitDpsTest(){dpsMode=false;dpsData=null;save();mainMenu()}
+function exitDpsTest(){dpsMode=false;dpsData=null;phase='wave';enemies=[];bullets=[];torps=[];enemyShots=[];particles=[];damagePop=[];sideEffects=[];const hud=document.getElementById('dpsHud');if(hud){hud.remove()}save();mainMenu()}
 
 const weaponDefs={gun:['자동 기관포',16,650,.22,'#f6e4b5'],heavy:['중량 함포',85,380,2.4,'#ffd39a'],scatter:['산탄 발사기',9,480,1.65,'#d8c3ff'],laser:['레이저',13,720,.45,'#75ecff'],torpedo:['어뢰 사출 게이트',90,270,5,'#35e5d2']};
 const sideWeaponNames={none:'미장착',side_laser:'레이저 포탑',side_railgun:'레일건',side_interceptor:'요격 기관총',side_shield:'전자기 방어막',side_emp:'EMP 발생기'};
