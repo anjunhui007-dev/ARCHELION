@@ -169,7 +169,7 @@
 const canvas=document.getElementById('game'),ctx=canvas.getContext('2d'),panel=document.getElementById('panel'),card=document.getElementById('card');
 let W=innerWidth,H=innerHeight,dpr=1;function resize(){dpr=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;canvas.width=W*dpr;canvas.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0)}addEventListener('resize',resize);resize();
 const $=id=>document.getElementById(id),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),rand=(a,b)=>a+Math.random()*(b-a);
-const normalizeUpgrades=(old,version)=>version===2?Object.assign({hp:0,attack:0,shield:0,boost:0},old||{}):{hp:0,attack:0,shield:0,boost:0};
+const normalizeUpgrades=(old,version)=>version===2?Object.assign({hp:0,attack:0,shield:0,boost:0,crit:0},old||{}):{hp:0,attack:0,shield:0,boost:0,crit:0};
 const saved=(()=>{try{return JSON.parse(localStorage.getItem('abyss-steel-depths-v1'))||{}}catch{return {}}})();
 let stage=saved.stage||1,money=saved.money??1200,lv=normalizeUpgrades(saved.lv,saved.upgradeVersion);
 const SLOT_KEY='abyss-steel-depths-slots-v1';let slots=(()=>{try{const v=JSON.parse(localStorage.getItem(SLOT_KEY));if(Array.isArray(v))return [v[0]||null,v[1]||null,v[2]||null]}catch{}return [saved.stage||saved.money!==undefined?{stage:saved.stage||1,money:saved.money??1200,lv:saved.lv||{},updated:Date.now()}:null,null,null]})();let activeSlot=-1;
@@ -248,10 +248,12 @@ function inventoryUpgradeSummary(category,key){
  const level=partLevel(category,key),bonus=partAtk(category,key),rows=[];
  if(key==='none')return '<div class="inventory-upgrade-summary">기본 장비 · 강화 불가</div>';
  rows.push('<div>현재 강화 <strong>+'+level+'</strong> · 누적 공격력 <strong>+'+bonus+'</strong></div>');
+ if(category==='fin')rows.push('<div>장착 효과 · 치명타 확률 <strong>+'+Math.min(25,level*.5).toFixed(1)+'%p</strong> (50강 최대 +25%p)</div>');
+ if(category==='hull')rows.push('<div>수집 보유 효과 · 10강 달성 시 치명타 확률 <strong>'+(level>=10?'+5%p 활성화':'미달성 ('+Math.min(level,10)+'/10강)')+'</strong></div>');
  if(category==='sail')rows.push('<div>함교 10강당 공격력 보너스 <strong>+'+Math.floor(level/10)+'%</strong></div>');
  if(category==='weapon'){
-  const effects={side_emp:['치명타 확률',5,.5],side_shield:['최종 데미지',0,1],side_interceptor:['치명타 데미지',150,2]};
-  if(effects[key]){const [name,base,gain]=effects[key];rows.push('<div>'+name+' <strong>'+(base+level*gain).toFixed(gain<1?1:0)+'%</strong> (기본 '+base+'% · 강화 +'+(level*gain).toFixed(gain<1?1:0)+'%)</div>')}
+  const effects={side_emp:['치명타 확률 보유 효과',0,.5],side_shield:['최종 데미지',0,1],side_interceptor:['치명타 데미지',150,2]};
+  if(effects[key]){const [name,base,gain]=effects[key];rows.push('<div>'+name+' <strong>'+(key==='side_emp'?Math.min(25,level*.5):base+level*gain).toFixed(gain<1?1:0)+'%</strong> (기본 '+base+'% · 강화 +'+(key==='side_emp'?Math.min(25,level*.5):level*gain).toFixed(gain<1?1:0)+'%'+(key==='side_emp'?' · 50강 최대':'')+')</div>')}
   const per=partWeaponCoef[key]||0;
   if(per)rows.push('<div>공격력 계수 증가 <strong>+'+(per*level*100).toFixed(3)+'%p</strong></div>');
   rows.push('<div>발사 간격 감소 <strong>'+Math.round((1-partCooldownFactor(key))*100)+'%</strong> (10강당 5%, 최대 50%)</div>');
@@ -398,7 +400,14 @@ function upgradePart(category,key){
 
 const baseAttack=()=>Math.round((100+lv.attack*10+equippedPartAttack())*(1+({streamlined:.03,standard:.01,armored:0}[hangar.sail]||0)+Math.floor(partLevel('sail',hangar.sail)/10)*.01+Math.floor(partTotalLevel()/30)*.01));
 const weaponCoefficients={gun:.16,heavy:.85,scatter:.09,laser:.13,torpedo:1.10,side_laser:.06,side_railgun:2.20};
-const critChance=()=>Math.min(100,5+partLevel('weapon','side_emp')*.5);
+const critChanceBreakdown=()=>({
+ base:5,
+ fin:Math.min(25,partLevel('fin',hangar.fin)*.5),
+ emp:Math.min(25,partLevel('weapon','side_emp')*.5),
+ repair:Math.min(30,Math.max(0,lv.crit||0)),
+ hull:PART_KEYS.hull.filter(k=>partLevel('hull',k)>=10).length*5
+});
+const critChance=()=>Math.min(100,Object.values(critChanceBreakdown()).reduce((a,b)=>a+b,0));
 const critDamage=()=>150+partLevel('weapon','side_interceptor')*2;
 const finalDamageBonus=()=>partLevel('weapon','side_shield')*.01;
 const scaledDamage=(weapon)=>baseAttack()*partWeaponCoefficient(weapon);
@@ -708,16 +717,17 @@ const maxHp=()=>Math.max(1,hullStat().hp+lv.hp*25+sailBonus().hp+finBonus().hp+p
 let damagePop=[];const formatDamage=n=>{const v=Math.max(0,n);return v>=1000?(v/1000).toFixed(v>=10000?1:2).replace(/\\.?0+$/,'')+'k':String(Math.round(v))};function showDamage(x,y,amount,kind='enemy'){if(amount<=0)return;damagePop.push({x:x+rand(-10,10),y:y-10,amount,kind,life:.8,max:.8});if(damagePop.length>110)damagePop.shift()}
 let assemblyGlowCanvas=null,assemblyGlowKey='';let sideEffects=[];let shieldHp=0,shieldMax=0,shieldFlash=0,barrierHp=0;function absorbDamage(amount){if(shieldHp>0){shieldHp--;return}const blocked=Math.min(barrierHp,amount);barrierHp-=blocked;const taken=(amount-blocked)*(hangar.hull==='guardian'&&barrierHp<=0?.85:1);player.hp-=taken;showDamage(player.x,player.y,taken,'player');}
 function reset(){dpsMode=false;dpsData=null;sinkingTime=0;sideEffects=[];damagePop=[];goldGainQueue=[];shieldFlash=0;shieldMax=currentSlots().some(s=>s.weapon==='side_shield')?3:0;shieldHp=shieldMax;barrierHp=maxShieldHp();scrollX=0;phase='wave';bossSpawned=false;goldPop=[];interceptors=[];interceptCooldown=0;raidTimer=rand(6,10);enemyShots=[];mines=[];mineTimer=rand(5,9);bubbles=[];bubbleTick=0;player={x:W*.25,y:H*.52,vx:0,vy:0,hp:maxHp(),angle:0,slots:[],inv:0};boost=maxBoost();enemies=[];torps=[];bullets=[];particles=[];waves=[];spawned=0;spawnTimer=1.1;time=0;player.slots=currentSlots();mode='play';panel.style.display='none'}
-const upgradeDefs=[['hp','체력 강화','최대 체력 +25',700],['attack','공격력 강화','공격력 +10',1000],['shield','보호막 체력 강화','최대 보호막 체력 +20 (자동 회복 없음)',900],['boost','부스터 게이지 강화','최대 게이지 +15',800]];
+const upgradeDefs=[['crit','치명타 확률 강화','치명타 확률 +1%p · 최대 Lv.30',1200],['hp','체력 강화','최대 체력 +25',700],['attack','공격력 강화','공격력 +10',1000],['shield','보호막 체력 강화','최대 보호막 체력 +20 (자동 회복 없음)',900],['boost','부스터 게이지 강화','최대 게이지 +15',800]];
 const upgradeCost=(base,level)=>Math.round(base*Math.pow(1.32,level)/10)*10;
 function shopStatsHtml(){
  const flatAttack=100+lv.attack*10+equippedPartAttack();
  const attackPercent=(({streamlined:.03,standard:.01,armored:0}[hangar.sail]||0)+Math.floor(partLevel('sail',hangar.sail)/10)*.01+Math.floor(partTotalLevel()/30)*.01);
  const percentAttackGain=baseAttack()-flatAttack;
- const entries=[['체력',maxHp()+' HP'],['보호막',maxShieldHp()],['공격력',baseAttack()],['치명타 확률',critChance().toFixed(1)+'%'],['치명타 데미지',critDamage().toFixed(0)+'%'],['최종 데미지 보너스','+'+(finalDamageBonus()*100).toFixed(0)+'%'],['공격력 % 보정','+'+(attackPercent*100).toFixed(0)+'% (고정 공격력 +'+percentAttackGain+')'],['이동 속도',Math.round(moveSpeed())],['부스터 용량',maxBoost()],['부스터 속도',Math.round(boosterBonus().speed*100)+'%'],['부스터 회복',Math.round(boosterBonus().regen*100)+'%'],['부스터 소모',Math.round(boosterBonus().drain*100)+'%'],['파츠 강화 총합','+'+partTotalLevel()],['파츠 강화 공격력','+'+equippedPartAttack()],['파츠 수집 보너스','+'+Math.floor(partTotalLevel()/30)+'%']];
+ const critParts=critChanceBreakdown();
+ const entries=[['치명타 확률 구성','기본 '+critParts.base+'% · 방향타 +'+critParts.fin+'% · EMP +'+critParts.emp+'% · 정비 +'+critParts.repair+'% · 기함 수집 +'+critParts.hull+'%'],['체력',maxHp()+' HP'],['보호막',maxShieldHp()],['공격력',baseAttack()],['치명타 확률',critChance().toFixed(1)+'%'],['치명타 데미지',critDamage().toFixed(0)+'%'],['최종 데미지 보너스','+'+(finalDamageBonus()*100).toFixed(0)+'%'],['공격력 % 보정','+'+(attackPercent*100).toFixed(0)+'% (고정 공격력 +'+percentAttackGain+')'],['이동 속도',Math.round(moveSpeed())],['부스터 용량',maxBoost()],['부스터 속도',Math.round(boosterBonus().speed*100)+'%'],['부스터 회복',Math.round(boosterBonus().regen*100)+'%'],['부스터 소모',Math.round(boosterBonus().drain*100)+'%'],['파츠 강화 총합','+'+partTotalLevel()],['파츠 강화 공격력','+'+equippedPartAttack()],['파츠 수집 보너스','+'+Math.floor(partTotalLevel()/30)+'%']];
  return '<section class="shop-stats"><h3>현재 잠수함 능력치</h3><div class="shop-stat-grid">'+entries.map(([name,value])=>'<div class="shop-stat"><span>'+name+'</span><strong>'+value+'</strong></div>').join('')+'</div></section>';
 }
-function shop(message='출항 준비'){mode='shop';panel.style.display='flex';let html='<h1>ABYSS</h1><p>'+message+'</p><div class="money">₡ '+money.toLocaleString()+'</div><div class="shop">';for(const [id,name,desc,base] of upgradeDefs){let cost=upgradeCost(base,lv[id]);html+='<button data-up="'+id+'" '+(money<cost?'disabled':'')+'>'+name+' <span style="color:#94d9cb">Lv.'+lv[id]+'</span><br>'+desc+'<br>₡ '+cost.toLocaleString()+'</button>'}html+='</div>'+shopStatsHtml()+'<button id="mainMenuBtn">메인 메뉴</button><p style="font-size:12px">게임 진행은 이 브라우저에 자동 저장됩니다.</p>';card.innerHTML=html;card.querySelectorAll('[data-up]').forEach(b=>b.onclick=()=>{const id=b.dataset.up,def=upgradeDefs.find(x=>x[0]===id),cost=upgradeCost(def[3],lv[id]);if(money>=cost){money-=cost;lv[id]++;save();shop(message)}});$('mainMenuBtn').onclick=()=>{save();mainMenu()}}
+function shop(message='출항 준비'){mode='shop';panel.style.display='flex';let html='<h1>ABYSS</h1><p>'+message+'</p><div class="money">₡ '+money.toLocaleString()+'</div><div class="shop">';for(const [id,name,desc,base] of upgradeDefs){let cost=upgradeCost(base,lv[id]),maxed=id==='crit'&&lv[id]>=30;html+='<button data-up="'+id+'" '+(money<cost||maxed?'disabled':'')+'>'+name+' <span style="color:#94d9cb">Lv.'+lv[id]+(id==='crit'?'/30':'')+'</span><br>'+desc+'<br>'+(maxed?'MAX':'₡ '+cost.toLocaleString())+'</button>'}html+='</div>'+shopStatsHtml()+'<button id="mainMenuBtn">메인 메뉴</button><p style="font-size:12px">게임 진행은 이 브라우저에 자동 저장됩니다.</p>';card.innerHTML=html;card.querySelectorAll('[data-up]').forEach(b=>b.onclick=()=>{const id=b.dataset.up,def=upgradeDefs.find(x=>x[0]===id),cost=upgradeCost(def[3],lv[id]);if(money>=cost&&(id!=='crit'||lv[id]<30)){money-=cost;lv[id]++;save();shop(message)}});$('mainMenuBtn').onclick=()=>{save();mainMenu()}}
 function flash(s){$('notice').textContent='!';noticeTimer=1.25}
 function spawnEnemy(kind='uboat'){const hunter=kind==='hunter',hp=(hunter?245:34)+stage*(hunter?26:7);enemies.push({kind,x:W+rand(70,190),y:rand(65,H-65),hp,max:hp,speed:hunter?46:93,vy:0,approachY:rand(-115,115),steerDelay:rand(.1,.65),fire:rand(1.2,2.8),dir:-1,r:hunter?38:19,seed:rand(0,10),angle:0,boss:false,gunner:hunter,telegraph:0,burstLeft:0,burstGap:0,passed:false})}
 function spawnBoss(){phase='boss';bossSpawned=true;const hp=500+stage*210;enemies.push({x:W+145,y:H*.5,hp,max:hp,speed:35+stage*2,fire:2,dir:-1,r:78,seed:0,angle:0,boss:true,kind:'dreadnought',telegraph:1.8,gunCooldown:1.1,burstLeft:0,burstGap:0,followV:0,desiredGap:Math.max(145,Math.min(W*.48,weaponRangeFor('gun')*.72))});flash('⚠ 보스 접근!')}
