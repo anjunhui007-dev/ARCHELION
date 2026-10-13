@@ -232,7 +232,7 @@ function renderInventoryPreviews(root){
 }
 function inventorySpecs(category,key){
  const detection=()=>Math.round(weaponDetectionRange());
- if(category==='hull'){const v={swift:[100,70,240,120,'2.1배','+35%','4개'],guardian:[150,100,185,100,'1.9배','기본','6개'],leviathan:[250,160,135,90,'1.6배','기본','7개']}[key];return [['기본 체력',v[0]],['기본 보호막',v[1]],['기본 속도',v[2]],['부스터 용량',v[3]],['부스터 배율',v[4]],['조종 반응',v[5]],['무장 슬롯',v[6]]]}
+ if(category==='hull'){const v={swift:[100,70,240,120,'2.1배','+35%','4개'],guardian:[150,100,185,100,'1.9배','기본','6개'],leviathan:[250,160,135,90,'1.6배','기본','7개']}[key];return [['기본 공격력',HULL_ATTACK[key]],['강화당 공격력','+'+HULL_ATTACK_PER_LEVEL[key]],['기본 체력',v[0]],['기본 보호막',v[1]],['기본 속도',v[2]],['부스터 용량',v[3]],['부스터 배율',v[4]],['조종 반응',v[5]],['무장 슬롯',v[6]]]}
  if(category==='sail'){const v={streamlined:['+3%','+12%','-20','-10'],standard:['+1%','기본','0','+20'],armored:['0','-12%','+60','+40']}[key];return [['공격력',v[0]],['이동 속도',v[1]],['체력 보정',v[2]],['보호막 보정',v[3]]]}
  if(category==='fin'){const v={light:['+35%','+20%','-20','-10','기본'],standard:['기본','기본','0','0','+25%'],armored:['-20%','-15%','+50','+30','기본']}[key];return [['상하 가속',v[0]],['상하 속도',v[1]],['체력 보정',v[2]],['보호막 보정',v[3]],['부스터 회복',v[4]]]}
  if(category==='booster'){const v=BOOSTER_BONUSES[key]||BOOSTER_BONUSES.azure;return [['부스터 최고 속도',Math.round((v.speed-1)*100)+'%'],['게이지 소모량',(v.drain===1?'기본':Math.round((v.drain-1)*100)+'%')],['게이지 회복',Math.round((v.regen-1)*100)+'%']]}
@@ -259,7 +259,7 @@ function inventoryUpgradeSummary(category,key){
   if(per)rows.push('<div>공격력 계수 증가 <strong>+'+(per*level*100).toFixed(3)+'%p</strong></div>');
   rows.push('<div>발사 간격 감소 <strong>'+Math.round((1-partCooldownFactor(key))*100)+'%</strong> (10강당 5%, 최대 50%)</div>');
  }
- rows.push('<div class="inventory-next-bonus">다음 강화 시 공격력 <strong>+'+({hull:5,sail:2,fin:3,booster:2,weapon:2}[category]||0)+'</strong>'+(category==='weapon'&&(partWeaponCoef[key]||0)?' · 계수 +'+((partWeaponCoef[key]||0)*100).toFixed(3)+'%p':'')+'</div>');
+ rows.push('<div class="inventory-next-bonus">다음 강화 시 공격력 <strong>+'+(category==='hull'?HULL_ATTACK_PER_LEVEL[key]:({sail:2,fin:3,booster:2,weapon:2}[category]||0))+'</strong>'+(category==='weapon'&&(partWeaponCoef[key]||0)?' · 계수 +'+((partWeaponCoef[key]||0)*100).toFixed(3)+'%p':'')+'</div>');
  return '<div class="inventory-upgrade-summary"><div class="inventory-upgrade-heading">강화로 상승한 능력치</div>'+rows.join('')+'</div>';
 }
 function openInventoryDetail(category,key){
@@ -409,7 +409,9 @@ const partLevel=(category,key)=>Math.max(0,Math.floor(Number(partProgress.levels
 const partOwned=(category,key)=>Math.max(0,Math.floor(Number(partProgress.owned[partId(category,key)])||0));
 const partCost=(category,key)=>1+Math.floor(partLevel(category,key)/10);
 const partTotalLevel=()=>Object.entries(PART_KEYS).reduce((sum,[category,keys])=>sum+keys.reduce((n,key)=>n+partLevel(category,key),0),0);
-const partAtk=(category,key)=>partLevel(category,key)*({hull:5,sail:2,fin:3,booster:2,weapon:2}[category]||0);
+const HULL_ATTACK={swift:70,guardian:100,leviathan:150};
+const HULL_ATTACK_PER_LEVEL={swift:3,guardian:5,leviathan:10};
+const partAtk=(category,key)=>partLevel(category,key)*(category==='hull'?(HULL_ATTACK_PER_LEVEL[key]||0):({sail:2,fin:3,booster:2,weapon:2}[category]||0));
 const equippedPartAttack=()=>partAtk('hull',hangar.hull)+partAtk('sail',hangar.sail)+partAtk('fin',hangar.fin)+(hangar.booster&&hangar.booster!=='none'?partAtk('booster',hangar.booster):0)+hangar.weapons.reduce((n,key)=>n+(key==='none'?0:partAtk('weapon',key)),0);
 const partCooldownFactor=key=>1-Math.min(10,Math.floor(partLevel('weapon',key)/10))*.05;
 const partWeaponCoef={gun:.002,heavy:.008,scatter:.001,torpedo:.01,side_laser:.0005,side_railgun:.015};
@@ -422,7 +424,7 @@ function upgradePart(category,key){
  localStorage.setItem(PARTS_KEY,JSON.stringify(partProgress));return true;
 }
 
-const baseAttack=()=>Math.round((100+lv.attack*10+equippedPartAttack())*(1+({streamlined:.03,standard:.01,armored:0}[hangar.sail]||0)+Math.floor(partLevel('sail',hangar.sail)/10)*.01+Math.floor(partTotalLevel()/30)*.01));
+const baseAttack=()=>Math.round(((HULL_ATTACK[hangar.hull]||100)+lv.attack*10+equippedPartAttack())*(1+({streamlined:.03,standard:.01,armored:0}[hangar.sail]||0)+Math.floor(partLevel('sail',hangar.sail)/10)*.01+Math.floor(partTotalLevel()/30)*.01));
 const weaponCoefficients={gun:.16,heavy:.85,scatter:.09,laser:.13,torpedo:1.10,side_laser:.06,side_railgun:2.20};
 const critChanceBreakdown=()=>({
  base:5,
@@ -744,7 +746,7 @@ function reset(){dpsMode=false;dpsData=null;sinkingTime=0;sideEffects=[];damageP
 const upgradeDefs=[['crit','치명타 확률 강화','치명타 확률 +1%p · 최대 Lv.30',1200],['hp','체력 강화','최대 체력 +25',700],['attack','공격력 강화','공격력 +10',1000],['shield','보호막 체력 강화','최대 보호막 체력 +20 (자동 회복 없음)',900],['boost','부스터 게이지 강화','최대 게이지 +15',800]];
 const upgradeCost=(base,level)=>Math.round(base*Math.pow(1.12,level)/10)*10;
 function shopStatsHtml(){
- const flatAttack=100+lv.attack*10+equippedPartAttack();
+ const flatAttack=(HULL_ATTACK[hangar.hull]||100)+lv.attack*10+equippedPartAttack();
  const attackPercent=(({streamlined:.03,standard:.01,armored:0}[hangar.sail]||0)+Math.floor(partLevel('sail',hangar.sail)/10)*.01+Math.floor(partTotalLevel()/30)*.01);
  const percentAttackGain=baseAttack()-flatAttack;
  const critParts=critChanceBreakdown();
